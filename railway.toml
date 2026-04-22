@@ -2,6 +2,9 @@
 builder = "NIXPACKS"
 buildCommand = "cd backend && npm install"
 
+[build.nixpacks]
+nixPkgs = ["nodejs_20", "python3"]
+
 [deploy]
 startCommand = "cd backend && node server.js"
 healthcheckPath = "/api/health"
