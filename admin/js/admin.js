@@ -1696,6 +1696,7 @@ function addOrderItem() {
     <div class="form-group" style="margin:0">
       <label style="font-size:.72rem">Ketik SKU / Nama Produk *</label>
       <input type="text" list="dl_products" id="iName_${idx}" placeholder="Pilih dari daftar atau ketik manual..." oninput="handleProductInput(${idx})">
+      <div id="iStockDisplay_${idx}" style="font-size:.65rem;color:var(--primary);margin-top:.2rem;font-weight:600"></div>
     </div>
     <div class="form-group" style="margin:0">
       <label style="font-size:.72rem">Qty *</label>
@@ -1717,15 +1718,37 @@ function addOrderItem() {
 }
 
 window.handleProductInput = function (idx) {
-  const val = document.getElementById(`iName_${idx}`).value;
+  const input = document.getElementById(`iName_${idx}`);
+  const val = input.value;
   const priceInput = document.getElementById(`iPrice_${idx}`);
+  const qtyInput = document.getElementById(`iQty_${idx}`);
+  
   if (typeof products !== 'undefined' && products.length) {
     const prod = products.find(p => {
       const lbl = p.sku ? `[${p.sku}] ${p.name}` : p.name;
       return lbl === val;
     });
+    
     if (prod) {
       priceInput.value = prod.sell_price || 0;
+      input.dataset.productId = prod.id;
+      input.dataset.sku = prod.sku || '';
+      
+      // Set Max Qty based on warehouse stock
+      const stock = parseInt(prod.warehouse_stock) || 0;
+      qtyInput.max = stock;
+      document.getElementById(`iStockDisplay_${idx}`).textContent = `📦 Tersedia: ${stock} ${prod.unit || 'unit'}`;
+      
+      // If current qty > stock, adjust it
+      if (parseInt(qtyInput.value) > stock) {
+        qtyInput.value = stock;
+        toast(`Stok tidak mencukupi. Maksimal: ${stock}`, 'warning');
+      }
+    } else {
+      delete input.dataset.productId;
+      delete input.dataset.sku;
+      qtyInput.removeAttribute('max');
+      document.getElementById(`iStockDisplay_${idx}`).textContent = '';
     }
   }
   calcTotal();
@@ -1740,7 +1763,15 @@ function removeOrderItem(idx) {
 function calcTotal() {
   let sub = 0;
   orderItems.forEach(idx => {
-    const qty = parseFloat(document.getElementById(`iQty_${idx}`)?.value || 0);
+    const qEl = document.getElementById(`iQty_${idx}`);
+    let qty = parseFloat(qEl?.value || 0);
+    const max = parseFloat(qEl?.max);
+    if (max !== NaN && qty > max) {
+      qty = max;
+      qEl.value = max;
+      toast(`Jumlah melebihi stok tersedia (${max})`, 'warning');
+    }
+
     const price = parseFloat(document.getElementById(`iPrice_${idx}`)?.value || 0);
     const s = qty * price; sub += s;
     const el = document.getElementById(`iSub_${idx}`);
@@ -1767,12 +1798,17 @@ function openOrderModal(id = null) {
 async function saveOrder() {
   const cusName = getVal('oCusName');
   if (!cusName) { toast('Nama customer wajib diisi', 'warning'); return; }
-  const items = orderItems.map(idx => ({
-    product_name: document.getElementById(`iName_${idx}`)?.value || '',
-    qty: parseInt(document.getElementById(`iQty_${idx}`)?.value) || 1,
-    unit_price: parseFloat(document.getElementById(`iPrice_${idx}`)?.value) || 0,
-    unit: 'unit',
-  })).filter(i => i.product_name && i.qty > 0);
+  const items = orderItems.map(idx => {
+    const input = document.getElementById(`iName_${idx}`);
+    return {
+      product_id: input?.dataset.productId || null,
+      product_sku: input?.dataset.sku || null,
+      product_name: input?.value || '',
+      qty: parseInt(document.getElementById(`iQty_${idx}`)?.value) || 1,
+      unit_price: parseFloat(document.getElementById(`iPrice_${idx}`)?.value) || 0,
+      unit: 'unit',
+    };
+  }).filter(i => i.product_name && i.qty > 0);
   if (!items.length) { toast('Tambahkan minimal 1 item order', 'warning'); return; }
 
   const payload = {
@@ -1821,10 +1857,122 @@ async function deleteOrder(id) {
 }
 
 async function viewInvoice(id) {
-  navigateTo('invoice-view');
   try {
     const data = await api('GET', `/orders/${id}/invoice`);
-    renderInvoice(data.data);
+    const { order, company } = data.data;
+    
+    const rows = (order.items || []).map((item, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td><strong>${item.product_name}</strong>${item.product_sku ? `<br><span style="font-size:9px;color:#888">${item.product_sku}</span>` : ''}</td>
+        <td style="text-align:center">${item.qty} ${item.unit || 'unit'}</td>
+        <td style="text-align:right">${fmtRp(item.unit_price)}</td>
+        <td style="text-align:right;font-weight:700">${fmtRp(item.subtotal)}</td>
+      </tr>`).join('');
+
+    const html = `
+      <html>
+      <head>
+        <title>Invoice ${order.order_number}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: 'Outfit', sans-serif; color: #2C1A0E; padding: 40px; line-height: 1.4; }
+          .inv-header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #5C2E0E; padding-bottom: 20px; }
+          .co-info h1 { font-size: 24px; margin: 0; color: #5C2E0E; font-weight: 700; }
+          .co-info p { margin: 3px 0; font-size: 12px; color: #6B5040; }
+          
+          .inv-meta { text-align: right; }
+          .inv-meta h2 { font-size: 32px; margin: 0; color: #5C2E0E; font-weight: 600; letter-spacing: 2px; }
+          .inv-meta p { margin: 5px 0; font-size: 14px; font-weight: 700; color: #5C2E0E; }
+          
+          .client-info { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
+          .info-box h4 { margin: 0 0 8px 0; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+          .info-box p { margin: 0; font-size: 13px; font-weight: 500; }
+          
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+          th { background: #F5F0EB; text-align: left; padding: 12px 10px; border-bottom: 2px solid #5C2E0E; text-transform: uppercase; color: #5C2E0E; font-weight: 700; }
+          td { padding: 12px 10px; border-bottom: 1px solid #F0EBE3; vertical-align: top; }
+          
+          .totals { margin-top: 20px; display: flex; justify-content: flex-end; }
+          .tot-table { width: 250px; }
+          .tot-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+          .tot-row.grand { border-top: 2px solid #5C2E0E; margin-top: 8px; padding-top: 10px; font-weight: 800; font-size: 16px; color: #5C2E0E; }
+          
+          .footer { margin-top: 60px; font-size: 11px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+          .status-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-top: 5px; }
+          .status-paid { background: #E8F5E9; color: #2E7D32; }
+          .status-unpaid { background: #FFEBEE; color: #C62828; }
+
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <div class="inv-header">
+          <div class="co-info">
+            <h1>${company.site_name || 'JOGJA FURNITURE'}</h1>
+            <p>FURNITURE & INTERIOR SOLUTIONS</p>
+            <p style="margin-top: 10px">📍 ${company.address || '—'}</p>
+            <p>📞 ${company.phone || '—'}</p>
+          </div>
+          <div class="inv-meta">
+            <h2>INVOICE</h2>
+            <p>${order.order_number}</p>
+            <div style="font-size: 12px; color: #6B5040;">Tanggal: ${fmtDateOnly(order.created_at)}</div>
+            <div class="status-badge ${order.payment_status === 'paid' ? 'status-paid' : 'status-unpaid'}">${order.payment_status.toUpperCase()}</div>
+          </div>
+        </div>
+
+        <div class="client-info">
+          <div class="info-box">
+            <h4>DITUJUKAN KEPADA</h4>
+            <p><strong>${order.customer_name}</strong></p>
+            <p>${order.customer_phone || ''}</p>
+            <p>${order.customer_email || ''}</p>
+          </div>
+          <div class="info-box">
+            <h4>ALAMAT PENGIRIMAN</h4>
+            <p>${order.shipping_addr || order.customer_addr || '—'}</p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Deskripsi Produk</th>
+              <th style="text-align:center;width:80px">Qty</th>
+              <th style="text-align:right;width:120px">Harga</th>
+              <th style="text-align:right;width:120px">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <div class="totals">
+          <div class="tot-table">
+            <div class="tot-row"><span>Subtotal</span><span>${fmtRp(order.subtotal)}</span></div>
+            ${order.discount > 0 ? `<div class="tot-row" style="color:#2E7D32"><span>Diskon</span><span>- ${fmtRp(order.discount)}</span></div>` : ''}
+            ${order.shipping_cost > 0 ? `<div class="tot-row"><span>Ongkos Kirim</span><span>${fmtRp(order.shipping_cost)}</span></div>` : ''}
+            <div class="tot-row grand"><span>TOTAL</span><span>${fmtRp(order.total)}</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 40px; font-size: 12px;">
+          <p><strong>Catatan:</strong> ${order.notes || '—'}</p>
+        </div>
+
+        <div class="footer">
+          <p>Terima kasih atas pesanan Anda!</p>
+          <p>Invoice ini sah dan diproses oleh sistem komputer.</p>
+        </div>
+
+        <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 500); };</script>
+      </body>
+      </html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
   } catch (e) { toast(e.message, 'error'); }
 }
 
