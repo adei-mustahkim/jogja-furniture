@@ -3,7 +3,6 @@ builder = "NIXPACKS"
 buildCommand = "cd backend && npm install"
 
 [deploy]
-startCommand = "cd backend && node reset-password.js"
 startCommand = "cd backend && node server.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
