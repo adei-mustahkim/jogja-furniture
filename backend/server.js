@@ -104,9 +104,6 @@ app.use((err, req, res, next) => {
     message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message,
   });
 });
-
-// ── Listen Server ──────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
 // TEMPORARY - HAPUS SETELAH DIPAKAI
 app.get('/reset-pw-sekali', async (req, res) => {
   const bcrypt = require('bcryptjs');
@@ -115,6 +112,8 @@ app.get('/reset-pw-sekali', async (req, res) => {
   await db.query('UPDATE admin_users SET password=? WHERE username=?', [hash, 'superadmin']);
   res.send('✅ Password direset! Hapus endpoint ini sekarang!');
 });
+// ── Listen Server ──────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log('================================================');
   console.log(`🚀 JOGJA FURNITURE LIVE ON PORT ${PORT}`);
