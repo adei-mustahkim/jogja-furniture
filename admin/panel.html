@@ -523,7 +523,7 @@
     <button class="module-btn" id="modBtnCms" onclick="switchModule('cms')">🌐 Website CMS</button>
     <button class="module-btn" id="modBtnWarehouse" onclick="switchModule('warehouse')">📦 Warehouse</button>
     <button class="module-btn" id="modBtnMarketing" onclick="switchModule('marketing')">📣 Marketing</button>
-    <button class="module-btn" id="modBtnControl" onclick="switchModule('control')">🛡️ Control Center</button>
+    <button class="module-btn" id="modBtnControl" onclick="switchModule('control')">🛡️ Executive Dashboard</button>
     <span style="margin-left:auto;color:rgba(255,255,255,.35);font-size:.72rem" id="modCurrentInfo"></span>
   </div>
 
@@ -546,6 +546,7 @@
       <a href="#" id="logoutBtn">🚪 Keluar</a>
     </div>
   </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <!-- ══ MAIN ══ -->
   <div class="main-wrap">
@@ -553,11 +554,26 @@
       <button class="btn btn-outline btn-icon" id="sidebarToggle" style="display:none">☰</button>
       <div class="topbar-title" id="pageTitle">📊 Dashboard</div>
       <div class="topbar-actions">
-        <span style="position:relative;cursor:pointer;font-size:1.15rem" onclick="navigateTo('notifications')"
-          title="Notifikasi">
-          🔔<span id="notifBadge"
-            style="display:none;position:absolute;top:-5px;right:-7px;background:var(--danger);color:#fff;font-size:.58rem;padding:1px 4px;border-radius:99px;font-weight:700;min-width:16px;text-align:center">0</span>
-        </span>
+        <div class="notif-container">
+          <span style="position:relative;cursor:pointer;font-size:1.15rem" id="notifIcon" onclick="toggleNotifDropdown(event)"
+            title="Notifikasi">
+            🔔<span id="notifBadge"
+              style="display:none;position:absolute;top:-5px;right:-7px;background:var(--danger);color:#fff;font-size:.58rem;padding:1px 4px;border-radius:99px;font-weight:700;min-width:16px;text-align:center">0</span>
+          </span>
+          <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-dropdown-head">
+              <h4>Notifikasi</h4>
+              <button class="btn btn-sm btn-outline" onclick="markAllRead()" style="font-size:.65rem">Tandai Semua Dibaca</button>
+            </div>
+            <div class="notif-dropdown-body" id="notifListDropdown">
+              <div style="text-align:center;padding:2rem;color:var(--text-light)">Memuat...</div>
+            </div>
+            <div class="notif-dropdown-footer">
+              <a href="#" onclick="closeNotifDropdown(); navigateTo('notifications')">Lihat Semua Notifikasi</a>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-outline" id="btnPageRules" onclick="showPageRules()" title="Lihat Aturan & Logika Menu Ini">💡 Aturan & Logika</button>
         <a href="../index.html" target="_blank" class="btn btn-outline">🌐 Website</a>
       </div>
     </div>
@@ -566,15 +582,8 @@
 
       <!-- DASHBOARD (CMS) -->
       <div class="page" id="page-dashboard">
-        <!-- Quick Actions -->
-        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem">
-          <button class="btn btn-primary" onclick="navigateTo('products')" style="gap:.5rem">📦 Kelola Produk</button>
-          <button class="btn btn-outline" onclick="navigateTo('contacts')" style="gap:.5rem">📨 Lihat Pesan</button>
-          <button class="btn btn-outline" onclick="navigateTo('testimonials')" style="gap:.5rem">💬 Testimoni</button>
-          <button class="btn btn-outline" onclick="navigateTo('settings')" style="gap:.5rem">⚙️ Settings</button>
-        </div>
-        <div class="stat-cards" id="dashStats" style="grid-template-columns:repeat(auto-fill,minmax(195px,1fr))"></div>
-        <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:1.25rem;margin-top:1.25rem">
+        <div class="stat-cards" id="dashStats"></div>
+        <div class="grid-2col" style="display:grid;grid-template-columns:1.3fr 1fr;gap:1.25rem;margin-top:1.25rem">
           <div class="card">
             <div class="card-header">
               <div class="card-title" id="dash1Title">📨 Pesan Terbaru</div>
@@ -600,16 +609,8 @@
 
       <!-- DASHBOARD MARKETING -->
       <div class="page" id="page-marketing-dashboard">
-        <!-- Quick Actions Marketing -->
-        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem">
-          <button class="btn btn-primary" onclick="openOrderModal()" style="gap:.5rem">🛒 Buat Order Baru</button>
-          <button class="btn btn-outline" onclick="openCustomerModal()" style="gap:.5rem">👥 Tambah Customer</button>
-          <button class="btn btn-outline" onclick="navigateTo('products')" style="gap:.5rem">📦 Lihat Produk</button>
-          <button class="btn btn-outline" onclick="navigateTo('orders')" style="gap:.5rem">📋 Daftar Order</button>
-        </div>
-        <div class="stat-cards" id="marketStats"
-          style="grid-template-columns:repeat(auto-fill,minmax(195px,1fr));margin-bottom:1.25rem"></div>
-        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:1.25rem">
+        <div class="stat-cards" id="marketStats"></div>
+        <div class="grid-2col" style="display:grid;grid-template-columns:1.5fr 1fr;gap:1.25rem">
           <div class="card">
             <div class="card-header">
               <div class="card-title">🛒 Order Terbaru</div>
@@ -821,20 +822,11 @@
 
       <!-- WAREHOUSE DASHBOARD -->
       <div class="page" id="page-warehouse-dashboard">
-        <!-- Quick Actions Gudang -->
-        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem">
-          <button class="btn btn-success" onclick="navigateTo('stock')" style="gap:.5rem">📥 Barang
-            Masuk/Keluar</button>
-          <button class="btn btn-outline" onclick="navigateTo('stock-transactions')" style="gap:.5rem">📋 Riwayat
-            Transaksi</button>
-          <button class="btn btn-outline" onclick="navigateTo('suppliers')" style="gap:.5rem">🏢 Supplier</button>
-          <button class="btn btn-outline" onclick="navigateTo('orders')" style="gap:.5rem">🛒 Order</button>
-        </div>
-        <div class="stat-cards" id="whStats" style="grid-template-columns:repeat(auto-fill,minmax(195px,1fr))"></div>
         <!-- Inventory Value KPI -->
-        <div id="whInventoryKPI" style="display:none;margin-top:1rem"></div>
+        <div id="whInventoryKPI" style="display:none;margin-bottom:1.25rem"></div>
+        <div class="stat-cards" id="whStats"></div>
         <!-- Charts Row -->
-        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.25rem;margin-top:1.25rem">
+        <div class="grid-2col" style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.25rem;margin-top:1.25rem">
           <div class="card">
             <div class="card-header">
               <div class="card-title">📊 Stok Masuk vs Keluar (7 Hari)</div>
@@ -884,7 +876,7 @@
 
       <!-- STOCK MANAGEMENT -->
       <div class="page" id="page-stock">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+        <div class="grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
           <div class="card">
             <div class="card-header">
               <div class="card-title">📥 Barang Masuk</div>
@@ -1065,8 +1057,7 @@
 
       <!-- ORDERS -->
       <div class="page" id="page-orders">
-        <div class="stat-cards" id="orderStats"
-          style="grid-template-columns:repeat(auto-fill,minmax(195px,1fr));margin-bottom:1rem"></div>
+        <div class="stat-cards" id="orderStats"></div>
         <div class="card">
           <div class="card-header">
             <div class="card-title">🛒 Manajemen Order</div>
@@ -1206,21 +1197,14 @@
 
       <!-- CONTROL CENTER -->
       <div class="page" id="page-control-center">
-        <!-- Quick Actions CC -->
-        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem">
-          <button class="btn btn-primary" onclick="navigateTo('users')" style="gap:.5rem">👤 Kelola User</button>
-          <button class="btn btn-outline" onclick="navigateTo('activity-logs')" style="gap:.5rem">📋 Activity
-            Log</button>
-          <button class="btn btn-outline" onclick="navigateTo('orders')" style="gap:.5rem">🛒 Semua Order</button>
-          <button class="btn btn-outline" onclick="navigateTo('notifications')" style="gap:.5rem">🔔 Notifikasi</button>
-        </div>
-        <div class="stat-cards" id="ccStats"
-          style="grid-template-columns:repeat(auto-fill,minmax(195px,1fr));margin-bottom:1.25rem"></div>
+        <!-- Inventory Value KPI for Owner -->
+        <div id="ccInventoryKPI" style="display:none;margin-bottom:1.25rem"></div>
+        <div class="stat-cards" id="ccStats"></div>
         <!-- Charts Row -->
-        <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+        <div class="grid-2col" style="display:grid;grid-template-columns:1.6fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">📈 Revenue 30 Hari Terakhir</div>
+              <div class="card-title">📈 Volume Order 30 Hari Terakhir</div>
             </div>
             <canvas id="chartRevenue" height="160"></canvas>
           </div>
@@ -1267,7 +1251,7 @@
 
       <!-- PROFILE -->
       <div class="page" id="page-profile">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+        <div class="grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
           <div class="card">
             <div class="card-header">
               <div class="card-title">👤 Profil Akun Saya</div>
@@ -1643,7 +1627,7 @@
           </div>
           <div id="orderItems"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem">
+        <div class="grid-3col" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem">
           <div class="form-group"><label>Diskon (Rp)</label><input type="number" id="oDiscount" placeholder="0" min="0"
               onchange="calcTotal()"></div>
           <div class="form-group"><label>Ongkos Kirim (Rp)</label><input type="number" id="oShipping" placeholder="0" min="0"
@@ -1730,6 +1714,22 @@
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeModal('modalService')">Batal</button>
         <button class="btn btn-primary" onclick="saveService()">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Page Rules & Logic -->
+  <div class="modal-overlay" id="modalPageRules">
+    <div class="modal-box" style="max-width:600px">
+      <div class="modal-head">
+        <h3 id="rulesTitle">💡 Aturan & Logika</h3><button class="modal-close-btn"
+          onclick="closeModal('modalPageRules')">✕</button>
+      </div>
+      <div class="modal-body" id="rulesContent" style="line-height:1.6;font-size:.9rem;color:var(--text)">
+        <!-- Content will be injected by JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('modalPageRules')">Paham, Terima Kasih</button>
       </div>
     </div>
   </div>

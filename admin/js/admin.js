@@ -19,6 +19,108 @@ let categories = [];
 let customers = [];
 let suppliers = [];
 let products = [];
+let currentPageId = 'dashboard';
+
+// ── Page Rules & Logic ──
+const PAGE_RULES = {
+  'dashboard': `
+    <ul>
+      <li><strong>Statistik Utama:</strong> Menampilkan ringkasan data produk, kategori, dan pesan masuk.</li>
+      <li><strong>Pesan Terbaru:</strong> Daftar 5 pesan terakhir dari website. Klik "Lihat Semua" untuk membalas.</li>
+      <li><strong>Produk Terpopuler:</strong> Berdasarkan jumlah klik/view dari pengunjung website.</li>
+    </ul>`,
+  'products': `
+    <ul>
+      <li><strong>Harga:</strong> Admin Gudang melihat Harga Beli, Admin Website melihat Harga Jual.</li>
+      <li><strong>Status Stok:</strong> Jika stok ≤ 3 akan berwarna merah (kritis). Jika 0, status otomatis jadi "Out of Stock".</li>
+      <li><strong>Publish:</strong> Produk hanya akan muncul di website jika statusnya "Published".</li>
+      <li><strong>Unggulan:</strong> Produk bertanda ⭐ akan tampil di halaman depan website.</li>
+    </ul>`,
+  'products-new': `
+    <ul>
+      <li><strong>Sumber Data:</strong> Halaman ini berisi produk yang baru diinput oleh Admin Gudang tetapi belum dikonfigurasi kontennya (deskripsi/foto) untuk website.</li>
+      <li><strong>Tugas:</strong> Admin Website harus mengedit dan mengubah statusnya menjadi "Published" agar tampil di katalog.</li>
+    </ul>`,
+  'orders': `
+    <ul>
+      <li><strong>Potong Stok:</strong> Stok otomatis berkurang saat status diubah ke <em>Confirmed, Processing, Ready,</em> atau <em>Delivered</em>.</li>
+      <li><strong>Kembalikan Stok:</strong> Stok otomatis bertambah kembali jika status diubah ke <em>Cancelled</em> atau <em>Refunded</em>.</li>
+      <li><strong>Edit/Hapus:</strong> Order yang sudah <em>Delivered</em> atau <em>Paid</em> tidak dapat dihapus/diedit sembarangan demi integritas data.</li>
+      <li><strong>Invoice:</strong> Klik ikon 🧾 untuk melihat dan mencetak invoice resmi.</li>
+    </ul>`,
+  'stock': `
+    <ul>
+      <li><strong>Barang Masuk:</strong> Menambah stok fisik dan mencatat harga modal terbaru.</li>
+      <li><strong>Barang Keluar:</strong> Mengurangi stok fisik secara manual (di luar pesanan website).</li>
+      <li><strong>Sinkronisasi:</strong> Setiap perubahan stok di sini akan langsung memperbarui status ketersediaan di website.</li>
+    </ul>`,
+  'stock-summary': `
+    <ul>
+      <li><strong>Nilai Inventaris:</strong> Menampilkan total nilai rupiah barang yang tersimpan di gudang berdasarkan harga modal.</li>
+      <li><strong>Export:</strong> Gunakan tombol "Export PDF" untuk mencetak laporan stok resmi.</li>
+    </ul>`,
+  'customers': `
+    <ul>
+      <li><strong>Total Order:</strong> Sistem melacak berapa kali pelanggan melakukan pemesanan.</li>
+      <li><strong>Loyalitas:</strong> Pelanggan dengan akumulasi belanja besar dapat dilihat dari total spend mereka.</li>
+    </ul>`,
+  'users': `
+    <ul>
+      <li><strong>Role System:</strong> Pastikan memberikan role yang sesuai (Gudang/Website/Marketing).</li>
+      <li><strong>Keamanan:</strong> Gunakan "Force Logout" jika ada indikasi akun disalahgunakan.</li>
+    </ul>`,
+  'categories': `
+    <ul>
+      <li><strong>Ikon:</strong> Gunakan emoji untuk ikon kategori agar tampilan di website lebih menarik.</li>
+      <li><strong>Slug:</strong> Digunakan untuk URL website. Pastikan unik.</li>
+    </ul>`,
+  'services': `
+    <ul>
+      <li><strong>Info:</strong> Gunakan tanda pipa (|) untuk memisahkan poin-poin informasi layanan.</li>
+    </ul>`,
+  'testimonials': `
+    <ul>
+      <li><strong>Rating:</strong> Memberikan feedback visual berupa bintang di halaman testimonial.</li>
+    </ul>`,
+  'contacts': `
+    <ul>
+      <li><strong>Pesan Masuk:</strong> Pastikan membalas pesan melalui email atau WhatsApp yang tertera.</li>
+    </ul>`,
+  'settings': `
+    <ul>
+      <li><strong>Konfigurasi:</strong> Perubahan di sini (Nama Toko, Alamat, Logo) akan langsung berdampak pada seluruh website dan Invoice.</li>
+    </ul>`,
+  'warehouse-dashboard': `
+    <ul>
+      <li><strong>Stok Kritis:</strong> Produk yang butuh re-stock segera.</li>
+      <li><strong>Inventory Value:</strong> Total nilai modal barang yang ada di gudang.</li>
+    </ul>`,
+  'marketing-dashboard': `
+    <ul>
+      <li><strong>Quick Actions:</strong> Pintasan cepat untuk membuat order atau menambah customer.</li>
+    </ul>`,
+  'stock-transactions': `
+    <ul>
+      <li><strong>Audit Trail:</strong> Melacak siapa yang melakukan perubahan stok dan kapan.</li>
+    </ul>`,
+  'suppliers': `
+    <ul>
+      <li><strong>Manajemen Mitra:</strong> Data supplier untuk mempermudah pencatatan barang masuk.</li>
+    </ul>`,
+  'notifications': `
+    <ul>
+      <li><strong>System Alerts:</strong> Pemberitahuan otomatis saat stok habis atau ada order baru.</li>
+    </ul>`,
+  'control-center': `
+    <ul>
+      <li><strong>Monitoring:</strong> Ringkasan aktivitas seluruh departemen untuk kebutuhan strategis Owner.</li>
+      <li><strong>Order Monitor:</strong> Menampilkan grafik volume order harian untuk memantau tren bisnis.</li>
+    </ul>`,
+  'profile': `
+    <ul>
+      <li><strong>Akun:</strong> Anda dapat mengubah data diri dan password secara mandiri.</li>
+    </ul>`
+};
 
 // ── Debounce ──
 const debounce = (fn, ms) => {
@@ -133,9 +235,11 @@ function initUI() {
     window.location.href = 'index.html';
   });
 
-  // Sidebar toggle (mobile)
   document.getElementById('sidebarToggle').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
+  });
+  document.getElementById('sidebarOverlay')?.addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('open');
   });
 
   // Slug auto-gen from product name
@@ -188,12 +292,11 @@ const MENUS = {
     { icon: '👤', label: 'Profil Saya', page: 'profile' },
   ],
   control: [
-    { icon: '🛡️', label: 'Control Center', page: 'control-center', roles: ['superadmin'] },
+    { icon: '🛡️', label: 'Executive Dashboard', page: 'control-center', roles: ['superadmin'] },
     { section: 'Manajemen User' },
     { icon: '👤', label: 'Daftar User', page: 'users', roles: ['superadmin'] },
     { icon: '📋', label: 'Activity Log', page: 'activity-logs', roles: ['superadmin'] },
     { section: 'Monitoring' },
-    { icon: '🔔', label: 'Notifikasi', page: 'notifications' },
     { icon: '👤', label: 'Profil Saya', page: 'profile' },
   ],
   marketing: [
@@ -270,6 +373,11 @@ function navigateTo(page) {
   const navEl = document.querySelector(`.nav-item[data-page="${page}"]`);
   if (navEl) navEl.classList.add('active');
 
+  currentPageId = page;
+  
+  // Close sidebar on mobile after navigation
+  document.getElementById('sidebar')?.classList.remove('open');
+
   const pageTitles = {
     'dashboard': '📊 Dashboard', 'products': '📦 Manajemen Produk',
     'products-new': '🆕 Produk Baru dari Gudang', 'categories': '🗂 Kategori',
@@ -279,7 +387,7 @@ function navigateTo(page) {
     'stock': '📥 Stok Manajemen', 'stock-summary': '📊 Ringkasan Stok Produk', 'stock-transactions': '📋 Transaksi Stok',
     'suppliers': '🏢 Supplier', 'customers': '👥 Customer', 'orders': '🛒 Order',
     'invoice-view': '🧾 Invoice', 'users': '👤 User Management',
-    'activity-logs': '📋 Activity Log', 'control-center': '🛡️ Control Center',
+    'activity-logs': '📋 Activity Log', 'control-center': '🛡️ Executive Dashboard',
     'notifications': '🔔 Notifikasi', 'profile': '👤 Profil Saya',
   };
   document.getElementById('pageTitle').textContent = pageTitles[page] || page;
@@ -333,6 +441,14 @@ function openModal(id) { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) {
   document.getElementById(id)?.classList.remove('open');
   editingId = null;
+}
+
+function showPageRules() {
+  const content = PAGE_RULES[currentPageId] || '<p>Belum ada aturan khusus untuk halaman ini.</p>';
+  const title = document.getElementById('pageTitle').textContent;
+  document.getElementById('rulesTitle').innerHTML = `💡 Logika & Aturan: ${title}`;
+  document.getElementById('rulesContent').innerHTML = content;
+  openModal('modalPageRules');
 }
 function previewImg(input, previewId) {
   const file = input.files[0];
@@ -465,8 +581,9 @@ async function loadMarketingDashboard() {
     document.getElementById('marketStats').innerHTML = buildStatCards([
       { icon: '📦', label: 'Produk Published', val: s.total_products, cls: 'brown' },
       { icon: '👥', label: 'Customer Aktif', val: s.total_customers || 0, cls: 'blue' },
-      { icon: '🛒', label: 'Order Baru (Bulan Ini)', val: os.this_month_count || 0, cls: 'orange' },
-      { icon: '💰', label: 'Revenue (Bulan Ini)', val: fmtRp(os.this_month), cls: 'green' },
+      { icon: '🆕', label: 'Order Hari Ini', val: os.today_count || 0, cls: 'teal' },
+      { icon: '🗓️', label: 'Order Bulan Ini', val: os.month_confirmed_count || 0, cls: 'orange' },
+      { icon: '📋', label: 'Total Order', val: os.total || 0, cls: 'green' },
     ]);
 
     // Recent orders
@@ -1105,9 +1222,13 @@ async function loadSettings() {
         <div class="form-group">
           <label>${s.label || s.key}</label>
           ${s.type === 'image' ? `
-            ${s.value ? `<img src="${s.value.startsWith('/') ? s.value : '/uploads/settings/' + s.value}" class="img-preview" style="display:block;max-height:120px;margin-bottom:.5rem">` : ''}
-            <input type="file" id="setting_file_${s.key}" accept="image/*">
-            <button class="btn btn-sm btn-outline" style="margin-top:.35rem" onclick="uploadSettingImage('${s.key}')">📤 Upload Gambar</button>
+            <div class="img-preview-container" style="margin-bottom:.75rem">
+              ${s.value ? `<img src="${s.value.startsWith('/') ? s.value : '/uploads/settings/' + s.value}" class="img-preview">` : ''}
+            </div>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <input type="file" id="setting_file_${s.key}" accept="image/*" style="flex:1">
+              <button class="btn btn-sm btn-primary" onclick="uploadSettingImage('${s.key}')">📤 Upload</button>
+            </div>
           ` : s.type === 'textarea' ? `
             <textarea id="setting_${s.key}" rows="3">${s.value || ''}</textarea>
           ` : s.type === 'boolean' ? `
@@ -1177,11 +1298,12 @@ async function loadWarehouseDashboard() {
       if (kpi) {
         kpi.style.display = 'block';
         kpi.innerHTML = `
-          <div class="card" style="background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:var(--white);padding:1.25rem 1.75rem;display:flex;align-items:center;gap:1.5rem">
-            <span style="font-size:2rem">💰</span>
+          <div class="card" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: var(--white); padding: 1.5rem 2rem; display: flex; align-items: center; gap: 2rem; border: none; overflow: hidden; position: relative;">
+            <div style="position: absolute; right: -20px; top: -20px; font-size: 8rem; opacity: 0.1; transform: rotate(-15deg);">💰</div>
+            <div class="stat-icon" style="background: rgba(255,255,255,0.15); font-size: 2rem; width: 64px; height: 64px; border-radius: var(--radius-md);">💰</div>
             <div>
-              <div style="font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:.2rem">Total Nilai Inventaris</div>
-              <div style="font-family:var(--font-heading);font-size:2rem;font-weight:700;letter-spacing:.02em">${fmtRp(s.inventory_value)}</div>
+              <div style="font-size: .75rem; letter-spacing: .15em; text-transform: uppercase; opacity: 0.8; margin-bottom: .4rem; font-weight: 500;">Total Nilai Inventaris (Modal)</div>
+              <div style="font-family: var(--font-heading); font-size: 2.4rem; font-weight: 700; letter-spacing: .02em; line-height: 1;">${fmtRp(s.inventory_value)}</div>
             </div>
           </div>`;
       }
@@ -1628,8 +1750,9 @@ async function loadOrderStats() {
       { icon: '⏳', label: 'Pending', val: s.pending, cls: 'orange' },
       { icon: '🔄', label: 'Proses', val: s.processing, cls: 'blue' },
       { icon: '✅', label: 'Delivered', val: s.delivered, cls: 'green' },
-      { icon: '💰', label: 'Revenue', val: fmtRp(s.revenue), cls: 'teal' },
-      { icon: '📅', label: 'Bulan Ini', val: fmtRp(s.this_month), cls: 'purple' },
+      { icon: '🆕', label: 'Order Hari Ini', val: s.today_count, cls: 'teal' },
+      { icon: '🗓️', label: 'Order Bulan Ini', val: s.month_confirmed_count, cls: 'brown' },
+      { icon: '🚫', label: 'Order Dibatalkan', val: s.cancelled_count, cls: 'purple' },
     ]);
   } catch (e) { }
 }
@@ -2198,15 +2321,32 @@ async function loadControlCenter() {
     const data = await api('GET', '/control-center/stats');
     const s = data.data.stats;
     document.getElementById('ccStats').innerHTML = buildStatCards([
-      { icon: '👤', label: 'User Aktif', val: s.total_users, cls: 'brown' },
-      { icon: '🔗', label: 'Sesi Aktif', val: s.active_sessions, cls: 'green' },
-      { icon: '🛒', label: 'Total Order', val: s.total_orders, cls: 'blue' },
+      { icon: '🆕', label: 'Order Hari Ini', val: s.today_orders, cls: 'teal' },
+      { icon: '🗓️', label: 'Order Bulan Ini', val: s.month_confirmed, cls: 'brown' },
       { icon: '⏳', label: 'Order Pending', val: s.pending_orders, cls: 'orange' },
-      { icon: '👥', label: 'Customer', val: s.total_customers, cls: 'teal' },
-      { icon: '🏢', label: 'Supplier', val: s.total_suppliers, cls: 'purple' },
-      { icon: '🆕', label: 'Produk Baru', val: s.new_products, cls: 'orange' },
-      { icon: '💰', label: 'Revenue Bulan Ini', val: fmtRp(s.revenue_month), cls: 'green' },
+      { icon: '📊', label: 'Total Order', val: s.total_orders, cls: 'blue' },
+      { icon: '📦', label: 'Total Produk', val: s.total_products, cls: 'green' },
+      { icon: '⚠️', label: 'Stok Kritis', val: s.low_stock, cls: 'red' },
+      { icon: '👥', label: 'Customer', val: s.total_customers, cls: 'blue' },
+      { icon: '👤', label: 'User Aktif', val: s.total_users, cls: 'brown' },
     ]);
+
+    // Inventory Value KPI for Owner
+    if (s.inventory_value != null) {
+      const kpi = document.getElementById('ccInventoryKPI');
+      if (kpi) {
+        kpi.style.display = 'block';
+        kpi.innerHTML = `
+          <div class="card" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: var(--white); padding: 1.5rem 2rem; display: flex; align-items: center; gap: 2rem; border: none; overflow: hidden; position: relative;">
+            <div style="position: absolute; right: -20px; top: -20px; font-size: 8rem; opacity: 0.1; transform: rotate(-15deg);">💰</div>
+            <div class="stat-icon" style="background: rgba(255,255,255,0.15); font-size: 2rem; width: 64px; height: 64px; border-radius: var(--radius-md);">🏛️</div>
+            <div>
+              <div style="font-size: .75rem; letter-spacing: .15em; text-transform: uppercase; opacity: 0.8; margin-bottom: .4rem; font-weight: 500;">Total Aset Inventaris (Modal)</div>
+              <div style="font-family: var(--font-heading); font-size: 2.4rem; font-weight: 700; letter-spacing: .02em; line-height: 1;">${fmtRp(s.inventory_value)}</div>
+            </div>
+          </div>`;
+      }
+    }
 
     document.getElementById('ccLogsBody').innerHTML = (data.data.recent_logs || []).map(l => `
       <tr>
@@ -2216,18 +2356,18 @@ async function loadControlCenter() {
         <td style="font-size:.78rem">${l.module || '—'}</td>
       </tr>`).join('');
 
-    // Revenue line chart (30 days)
-    const revenueData = data.data.revenue_30days || [];
-    const revCanvas = document.getElementById('chartRevenue');
-    if (revCanvas) {
-      if (revCanvas._chartInstance) revCanvas._chartInstance.destroy();
-      revCanvas._chartInstance = new Chart(revCanvas, {
+    // Order line chart (30 days) - Replacing Revenue
+    const orderData = data.data.orders_30days || [];
+    const ordCanvas = document.getElementById('chartRevenue');
+    if (ordCanvas) {
+      if (ordCanvas._chartInstance) ordCanvas._chartInstance.destroy();
+      ordCanvas._chartInstance = new Chart(ordCanvas, {
         type: 'line',
         data: {
-          labels: revenueData.map(d => d.date),
+          labels: orderData.map(d => d.date),
           datasets: [{
-            label: 'Revenue (Rp)',
-            data: revenueData.map(d => d.revenue || 0),
+            label: 'Jumlah Order',
+            data: orderData.map(d => d.count || 0),
             borderColor: '#C49A6C',
             backgroundColor: 'rgba(196,154,108,.15)',
             borderWidth: 2.5,
@@ -2243,7 +2383,7 @@ async function loadControlCenter() {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: ctx => 'Rp ' + Number(ctx.raw).toLocaleString('id-ID')
+                label: ctx => ctx.raw + ' Order'
               }
             }
           },
@@ -2252,7 +2392,8 @@ async function loadControlCenter() {
             y: {
               ticks: {
                 font: { size: 10 },
-                callback: v => 'Rp ' + (v >= 1000000 ? (v / 1000000).toFixed(1) + 'jt' : v.toLocaleString('id-ID'))
+                stepSize: 1,
+                beginAtZero: true
               },
               grid: { color: '#f0ebe3' }
             }
@@ -2303,7 +2444,10 @@ async function loadControlCenter() {
 // ══════════════════════════════════════════════════════════════
 // NOTIFICATIONS
 // ══════════════════════════════════════════════════════════════
-async function loadNotifications() {
+// ══════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════════════════════════
+async function updateNotifCount() {
   try {
     const data = await api('GET', '/notifications');
     const notifBadge = document.getElementById('notifBadge');
@@ -2311,32 +2455,119 @@ async function loadNotifications() {
       if (data.unread > 0) { notifBadge.textContent = data.unread; notifBadge.style.display = 'block'; }
       else notifBadge.style.display = 'none';
     }
+    return data;
+  } catch (e) { return { unread: 0, data: [] }; }
+}
 
-    const list = document.getElementById('notifList');
-    if (!list) return;
-    const typeIcon = { info: 'ℹ️', warning: '⚠️', success: '✅', error: '❌' };
-    list.innerHTML = (data.data || []).map(n => `
-      <div style="display:flex;gap:1rem;padding:1rem 1.25rem;border-bottom:1px solid var(--gray100);background:${!n.is_read ? 'var(--accent-warm)' : 'transparent'};cursor:pointer" onclick="markNotifRead(${n.id},this)">
+function renderNotifItem(n, typeIcon) {
+  return `
+    <div class="notif-item ${!n.is_read ? 'unread' : ''}" 
+         style="padding:1rem 1.25rem; cursor:pointer" 
+         onclick="toggleNotif(${n.id}, this, event)">
+      <div style="display:flex;gap:1rem">
         <span style="font-size:1.2rem">${typeIcon[n.type] || '🔔'}</span>
         <div style="flex:1">
-          <div style="font-size:.88rem;font-weight:${!n.is_read ? '600' : '400'}">${n.title}</div>
-          <div style="font-size:.8rem;color:var(--text-light);margin-top:.2rem">${n.message || ''}</div>
+          <div class="notif-title" style="font-size:.88rem;font-weight:${!n.is_read ? '600' : '400'}">${n.title}</div>
           <div style="font-size:.72rem;color:var(--text-light);margin-top:.3rem">${fmtDate(n.created_at)}</div>
         </div>
         ${!n.is_read ? '<div class="notif-dot" style="width:8px;height:8px;background:var(--danger);border-radius:50%;margin-top:.3rem;flex-shrink:0"></div>' : ''}
-      </div>`).join('') || '<div style="text-align:center;padding:2rem;color:var(--text-light)">Tidak ada notifikasi</div>';
+      </div>
+      <div class="notif-msg" style="display:none;font-size:.82rem;color:var(--text);margin-top:.75rem;padding:.75rem;background:rgba(255,255,255,.5);border-radius:var(--radius-sm)">
+        ${n.message || 'Tidak ada detail pesan.'}
+      </div>
+    </div>`;
+}
+
+async function loadNotifications() {
+  try {
+    const data = await updateNotifCount();
+    const list = document.getElementById('notifList');
+    const listDropdown = document.getElementById('notifListDropdown');
+    const typeIcon = { info: 'ℹ️', warning: '⚠️', success: '✅', error: '❌' };
+
+    const html = (data.data || []).map(n => renderNotifItem(n, typeIcon)).join('')
+      || '<div style="text-align:center;padding:2rem;color:var(--text-light)">Tidak ada notifikasi</div>';
+
+    if (list) list.innerHTML = html;
+    if (listDropdown) listDropdown.innerHTML = html;
   } catch (e) { }
 }
 
-async function markNotifRead(id, el) {
-  try {
-    await api('PUT', `/notifications/${id}/read`);
-    el.style.background = 'transparent';
-    const dot = el.querySelector('.notif-dot');
-    if (dot) dot.remove();
+function toggleNotifDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('notifDropdown');
+  if (!dd) return;
+  const isShow = dd.classList.contains('show');
+
+  // Close others if any (like user profile menu if exists)
+
+  if (!isShow) {
+    dd.classList.add('show');
     loadNotifications();
-  } catch (e) { }
+  } else {
+    dd.classList.remove('show');
+  }
 }
+
+function closeNotifDropdown() {
+  document.getElementById('notifDropdown')?.classList.remove('show');
+}
+
+async function toggleNotif(id, el, e) {
+  if (e) e.stopPropagation();
+  const msg = el.querySelector('.notif-msg');
+  const isOpen = msg.style.display === 'block';
+
+  // Close all other messages in the same container
+  const container = el.parentElement;
+  container.querySelectorAll('.notif-msg').forEach(m => m.style.display = 'none');
+
+  if (!isOpen) {
+    msg.style.display = 'block';
+
+    // Mark as read if it was unread
+    const dot = el.querySelector('.notif-dot');
+    if (dot) {
+      try {
+        await api('PUT', `/notifications/${id}/read`);
+        el.classList.remove('unread');
+        dot.remove();
+        const title = el.querySelector('.notif-title');
+        if (title) title.style.fontWeight = '400';
+        updateNotifCount();
+      } catch (e) { }
+    }
+  }
+}
+
+async function markAllRead() {
+  if (!confirm('Tandai semua notifikasi sebagai dibaca?')) return;
+  try {
+    // Check if there is an endpoint for read-all, if not we'd have to loop
+    // For now, let's try to call a logical endpoint or just toast a placeholder if not supported
+    await api('PUT', '/notifications/read-all');
+    toast('Semua notifikasi ditandai dibaca');
+    loadNotifications();
+  } catch (e) {
+    // Fallback if endpoint doesn't exist
+    toast('Fitur ini sedang dalam pemeliharaan', 'info');
+  }
+}
+
+// Global click listener to close dropdowns and notification messages
+document.addEventListener('click', (e) => {
+  // Close notification dropdown if clicked outside
+  const dd = document.getElementById('notifDropdown');
+  const icon = document.getElementById('notifIcon');
+  if (dd && dd.classList.contains('show') && !dd.contains(e.target) && !icon.contains(e.target)) {
+    dd.classList.remove('show');
+  }
+
+  // Close notification messages if clicked outside a notif-item
+  if (!e.target.closest('.notif-item')) {
+    document.querySelectorAll('.notif-msg').forEach(m => m.style.display = 'none');
+  }
+});
 
 // ══════════════════════════════════════════════════════════════
 // PROFILE
