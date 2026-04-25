@@ -9,7 +9,7 @@ exports.getAll = async (req, res) => {
     );
     res.json({ success: true, data: rows });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -18,7 +18,7 @@ exports.getAllAdmin = async (req, res) => {
     const [rows] = await db.query('SELECT * FROM testimonials ORDER BY sort_order ASC, id ASC');
     res.json({ success: true, data: rows });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -33,7 +33,7 @@ exports.create = async (req, res) => {
     );
     res.status(201).json({ success: true, message: 'Testimoni berhasil dibuat', id: result.insertId });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -43,12 +43,14 @@ exports.update = async (req, res) => {
     const [result] = await db.query(
       `UPDATE testimonials SET name=?, role=?, initial=?, rating=?, content=?, 
        product_ref=?, sort_order=?, is_active=? WHERE id=?`,
-
+      [name, role || null, initial || (name ? name[0].toUpperCase() : ''), rating || 5,
+       content, product_ref || null, sort_order || 0, is_active !== undefined ? is_active : 1,
+       req.params.id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Testimoni tidak ditemukan' });
     res.json({ success: true, message: 'Testimoni berhasil diupdate' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Gagal mengupdate testimoni.' });
   }
 };
 
@@ -58,7 +60,7 @@ exports.remove = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Testimoni tidak ditemukan' });
     res.json({ success: true, message: 'Testimoni berhasil dihapus' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -75,9 +77,22 @@ exports.submitContact = async (req, res) => {
       'INSERT INTO contacts (name, email, phone, subject, message, product_ref) VALUES (?,?,?,?,?,?)',
       [name, email, phone, subject, message, product_ref]
     );
+
+    // Notify admin_website & superadmin
+    try {
+      await db.query(
+        "INSERT INTO notifications (target_role, type, title, message, link) VALUES (?, 'info', ?, ?, ?)",
+        ['admin_website', 'Pesan Baru dari Website', `Pesan dari ${name}: "${subject || 'Tanpa Subjek'}"`, '/admin/panel.html#contacts']
+      );
+      await db.query(
+        "INSERT INTO notifications (target_role, type, title, message, link) VALUES (?, 'info', ?, ?, ?)",
+        ['superadmin', 'Pesan Baru dari Website', `Pesan dari ${name}: "${subject || 'Tanpa Subjek'}"`, '/admin/panel.html#contacts']
+      );
+    } catch (notifErr) { console.error('Failed to create contact notification:', notifErr); }
+
     res.status(201).json({ success: true, message: 'Pesan berhasil dikirim! Kami akan segera menghubungi Anda.' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -100,7 +115,7 @@ exports.getAllContacts = async (req, res) => {
       pagination: { total: countRows[0].total, page: parseInt(page), limit: parseInt(limit) }
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -109,7 +124,7 @@ exports.markRead = async (req, res) => {
     await db.query('UPDATE contacts SET is_read=1 WHERE id=?', [req.params.id]);
     res.json({ success: true, message: 'Pesan ditandai sudah dibaca' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -118,6 +133,6 @@ exports.deleteContact = async (req, res) => {
     await db.query('DELETE FROM contacts WHERE id=?', [req.params.id]);
     res.json({ success: true, message: 'Pesan berhasil dihapus' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };

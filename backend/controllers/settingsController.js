@@ -1,60 +1,76 @@
+/**
+ * settingsController.js — Site Settings Management
+ * Fixed: public endpoint only returns safe keys, safe error messages
+ */
+
+'use strict';
+
 const db   = require('../config/database');
 const path = require('path');
 const fs   = require('fs');
 
-// GET semua settings (public)
+// Keys safe to expose publicly (whitelist approach)
+const PUBLIC_KEYS = new Set([
+  'site_name', 'site_tagline', 'site_desc', 'site_logo',
+  'whatsapp_number', 'whatsapp_message', 'phone', 'email', 'address',
+  'maps_embed', 'hero_label', 'hero_title_1', 'hero_title_accent',
+  'hero_desc', 'hero_btn_primary', 'hero_btn_secondary', 'hero_bg_image',
+  'stat_projects', 'stat_years', 'stat_satisfaction', 'stat_craftsmen',
+  'about_title', 'about_desc', 'about_years', 'about_image_main', 'about_image_sec',
+  'footer_desc', 'jam_operasional', 'marquee_items',
+  'instagram_url', 'facebook_url', 'youtube_url',
+]);
+
+// ── GET settings (public) — only whitelisted keys ──────────────
 exports.getAll = async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT `key`, value, type, label, group_name FROM settings');
+    const [rows] = await db.query(
+      'SELECT `key`, value FROM settings WHERE `key` IN (?)',
+      [[...PUBLIC_KEYS]]
+    );
     const settings = {};
-    rows.forEach(r => { settings[r.key] = r.value; });
+    rows.forEach((r) => { settings[r.key] = r.value; });
     res.json({ success: true, data: settings });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('[settings.getAll]', err);
+    res.status(500).json({ success: false, message: 'Gagal memuat settings.' });
   }
 };
 
-// GET settings by group (public)
+// ── GET settings by group (public) — only whitelisted keys ─────
 exports.getByGroup = async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT `key`, value, type, label FROM settings WHERE group_name = ?',
-      [req.params.group]
+      'SELECT `key`, value, type, label FROM settings WHERE group_name = ? AND `key` IN (?)',
+      [req.params.group, [...PUBLIC_KEYS]]
     );
     const settings = {};
-    rows.forEach(r => { settings[r.key] = r.value; });
+    rows.forEach((r) => { settings[r.key] = r.value; });
     res.json({ success: true, data: settings });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('[settings.getByGroup]', err);
+    res.status(500).json({ success: false, message: 'Gagal memuat settings.' });
   }
 };
 
-// GET semua settings dengan detail (admin)
+// ── GET all settings with detail (admin) ──────────────────────
 exports.getAllAdmin = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM settings ORDER BY group_name, id');
     res.json({ success: true, data: rows });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('[settings.getAllAdmin]', err);
+    res.status(500).json({ success: false, message: 'Gagal memuat settings.' });
   }
 };
 
-// UPDATE settings (admin) — support FormData + file upload
-// Dipanggil dari route yang sudah pakai multer, jadi req.files tersedia
+// ── UPDATE settings (admin) — FormData + file upload ──────────
 exports.update = async (req, res) => {
   try {
-    // Ambil semua field teks dari req.body (dikirim sebagai FormData)
     const body = req.body || {};
+    const imageKeys = ['hero_bg_image', 'about_image_main', 'about_image_sec', 'site_logo'];
 
-    // Kunci gambar yang diizinkan di-upload via file
-    const imageKeys = [
-      'hero_bg_image',
-      'about_image_main',
-      'about_image_sec',
-      'site_logo',
-    ];
-
-    // Proses file gambar yang di-upload
+    // Process uploaded images
     const fileUpdates = {};
     if (req.files) {
       for (const key of imageKeys) {
@@ -62,28 +78,25 @@ exports.update = async (req, res) => {
           const file = req.files[key][0];
           fileUpdates[key] = file.filename;
 
-          // Hapus file lama kalau ada
+          // Delete old file
           const [oldRows] = await db.query('SELECT value FROM settings WHERE `key` = ?', [key]);
           if (oldRows.length && oldRows[0].value) {
             const oldPath = path.join(__dirname, '..', 'uploads', 'settings', oldRows[0].value);
             if (fs.existsSync(oldPath)) {
-              try { fs.unlinkSync(oldPath); } catch(e) { /* ignore */ }
+              try { fs.unlinkSync(oldPath); } catch (e) { /* ignore */ }
             }
           }
         }
       }
     }
 
-    // Gabungkan semua update (teks + gambar)
     const allUpdates = { ...body, ...fileUpdates };
-
-    // Hapus kunci kosong / tidak relevan
     const skipKeys = ['_method'];
+
     for (const [key, value] of Object.entries(allUpdates)) {
       if (skipKeys.includes(key)) continue;
       if (value === undefined || value === null) continue;
 
-      // Cek apakah key ada di database dulu
       const [exists] = await db.query('SELECT id FROM settings WHERE `key` = ?', [key]);
       if (exists.length > 0) {
         await db.query('UPDATE settings SET value = ? WHERE `key` = ?', [String(value), key]);
@@ -92,22 +105,28 @@ exports.update = async (req, res) => {
 
     res.json({ success: true, message: 'Settings berhasil disimpan' });
   } catch (err) {
-    console.error('Settings update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error('[settings.update]', err);
+    res.status(500).json({ success: false, message: 'Gagal menyimpan settings.' });
   }
 };
 
-// UPDATE single setting key (admin) — untuk update teks satu per satu
+// ── UPDATE single setting key (admin) ─────────────────────────
 exports.updateOne = async (req, res) => {
   const { key } = req.params;
   const { value } = req.body;
+
+  // Validate key length
+  if (!key || key.length > 100) {
+    return res.status(400).json({ success: false, message: 'Key tidak valid' });
+  }
+
   try {
     const [result] = await db.query(
       'UPDATE settings SET value = ? WHERE `key` = ?',
       [value !== undefined ? String(value) : '', key]
     );
     if (result.affectedRows === 0) {
-      // Key belum ada — insert
+      // Key doesn't exist — insert
       await db.query(
         'INSERT INTO settings (`key`, value, type, group_name) VALUES (?,?,?,?)',
         [key, String(value || ''), 'text', 'general']
@@ -115,20 +134,19 @@ exports.updateOne = async (req, res) => {
     }
     res.json({ success: true, message: 'Setting berhasil diupdate' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('[settings.updateOne]', err);
+    res.status(500).json({ success: false, message: 'Gagal mengupdate setting.' });
   }
 };
 
-// UPLOAD gambar setting secara individual (endpoint khusus)
+// ── UPLOAD image setting ───────────────────────────────────────
 exports.uploadImage = async (req, res) => {
   const { key } = req.params;
-
-  // Validasi key hanya untuk gambar
   const allowedKeys = ['hero_bg_image', 'about_image_main', 'about_image_sec', 'site_logo'];
+
   if (!allowedKeys.includes(key)) {
     return res.status(400).json({ success: false, message: 'Key tidak diizinkan untuk upload gambar' });
   }
-
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'File gambar diperlukan' });
   }
@@ -136,16 +154,15 @@ exports.uploadImage = async (req, res) => {
   try {
     const filename = req.file.filename;
 
-    // Hapus gambar lama
+    // Delete old file
     const [oldRows] = await db.query('SELECT value FROM settings WHERE `key` = ?', [key]);
     if (oldRows.length && oldRows[0].value) {
       const oldPath = path.join(__dirname, '..', 'uploads', 'settings', oldRows[0].value);
       if (fs.existsSync(oldPath)) {
-        try { fs.unlinkSync(oldPath); } catch(e) { /* ignore */ }
+        try { fs.unlinkSync(oldPath); } catch (e) { /* ignore */ }
       }
     }
 
-    // Update atau insert
     const [exists] = await db.query('SELECT id FROM settings WHERE `key` = ?', [key]);
     if (exists.length > 0) {
       await db.query('UPDATE settings SET value = ? WHERE `key` = ?', [filename, key]);
@@ -163,6 +180,7 @@ exports.uploadImage = async (req, res) => {
       url: `/uploads/settings/${filename}`,
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('[settings.uploadImage]', err);
+    res.status(500).json({ success: false, message: 'Gagal upload gambar.' });
   }
 };

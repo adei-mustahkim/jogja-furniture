@@ -62,7 +62,7 @@ exports.getDashboard = async (req, res) => {
         stock_flow_7days
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -107,7 +107,7 @@ exports.getAllTransactions = async (req, res) => {
         totalPages: Math.ceil(total / parseInt(limit)) 
       } 
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // STOCK IN (Barang Masuk)
@@ -137,7 +137,7 @@ exports.stockIn = async (req, res) => {
 
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'STOCK_IN', module: 'Stock', description: `Barang masuk: ${product.name} +${qty} unit (${qtyBefore}→${qtyAfter})`, recordId: result.insertId, recordType: 'stock_transaction', ipAddress: getIp(req) });
     res.status(201).json({ success: true, message: `Barang masuk berhasil. Stok: ${qtyBefore} → ${qtyAfter}`, id: result.insertId });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // STOCK OUT (Barang Keluar)
@@ -171,7 +171,7 @@ exports.stockOut = async (req, res) => {
 
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'STOCK_OUT', module: 'Stock', description: `Barang keluar: ${product.name} -${qty} unit (${qtyBefore}→${qtyAfter})`, recordId: result.insertId, recordType: 'stock_transaction', ipAddress: getIp(req) });
     res.status(201).json({ success: true, message: `Barang keluar berhasil. Stok: ${qtyBefore} → ${qtyAfter}`, id: result.insertId });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // STOCK ADJUSTMENT
@@ -196,7 +196,7 @@ exports.stockAdjustment = async (req, res) => {
 
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'STOCK_ADJUSTMENT', module: 'Stock', description: `Adjustment stok: ${product.name} (${qtyBefore}→${qtyAfter})`, ipAddress: getIp(req) });
     res.json({ success: true, message: `Stok berhasil disesuaikan: ${qtyBefore} → ${qtyAfter}` });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 
@@ -244,7 +244,7 @@ exports.getStockSummary = async (req, res) => {
         totalPages: Math.ceil(total / parseInt(limit))
       }
     });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 
@@ -265,7 +265,7 @@ exports.getAllSuppliers = async (req, res) => {
       [...params, parseInt(limit), offset]
     );
     res.json({ success: true, data: rows, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.createSupplier = async (req, res) => {
@@ -280,7 +280,7 @@ exports.createSupplier = async (req, res) => {
     res.status(201).json({ success: true, message: 'Supplier berhasil ditambahkan', id: result.insertId });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ success: false, message: 'Kode supplier sudah digunakan' });
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -296,7 +296,7 @@ exports.updateSupplier = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Supplier tidak ditemukan' });
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'UPDATE', module: 'Suppliers', description: `Update supplier: ${name}`, recordId: parseInt(id), recordType: 'supplier', ipAddress: getIp(req) });
     res.json({ success: true, message: 'Supplier berhasil diupdate' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.deleteSupplier = async (req, res) => {
@@ -305,7 +305,7 @@ exports.deleteSupplier = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Supplier tidak ditemukan' });
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'DELETE', module: 'Suppliers', description: `Hapus supplier ID ${req.params.id}`, ipAddress: getIp(req) });
     res.json({ success: true, message: 'Supplier berhasil dihapus' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -327,7 +327,7 @@ exports.getAllCustomers = async (req, res) => {
       [...params, parseInt(limit), offset]
     );
     res.json({ success: true, data: rows, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.getCustomer = async (req, res) => {
@@ -336,7 +336,7 @@ exports.getCustomer = async (req, res) => {
     if (!customer) return res.status(404).json({ success: false, message: 'Customer tidak ditemukan' });
     const [orders] = await db.query('SELECT id, order_number, status, total, created_at FROM orders WHERE customer_id=? ORDER BY created_at DESC LIMIT 10', [req.params.id]);
     res.json({ success: true, data: { ...customer, orders } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.createCustomer = async (req, res) => {
@@ -351,7 +351,7 @@ exports.createCustomer = async (req, res) => {
     res.status(201).json({ success: true, message: 'Customer berhasil ditambahkan', id: result.insertId });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ success: false, message: 'Kode customer sudah digunakan' });
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -367,7 +367,7 @@ exports.updateCustomer = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Customer tidak ditemukan' });
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'UPDATE', module: 'Customers', description: `Update customer: ${name}`, recordId: parseInt(id), recordType: 'customer', ipAddress: getIp(req) });
     res.json({ success: true, message: 'Customer berhasil diupdate' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.deleteCustomer = async (req, res) => {
@@ -378,5 +378,5 @@ exports.deleteCustomer = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Customer tidak ditemukan' });
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'DELETE', module: 'Customers', description: `Hapus customer ID ${req.params.id}`, ipAddress: getIp(req) });
     res.json({ success: true, message: 'Customer berhasil dihapus' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };

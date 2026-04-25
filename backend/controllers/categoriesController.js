@@ -13,7 +13,7 @@ exports.getAll = async (req, res) => {
     );
     res.json({ success: true, data: rows });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -27,7 +27,7 @@ exports.getOne = async (req, res) => {
     if (!rows.length) return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan' });
     res.json({ success: true, data: rows[0] });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -45,7 +45,7 @@ exports.getAllAdmin = async (req, res) => {
     );
     res.json({ success: true, data: rows });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -63,7 +63,7 @@ exports.create = async (req, res) => {
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ success: false, message: 'Slug sudah digunakan' });
     }
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -87,7 +87,7 @@ exports.update = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan' });
     res.json({ success: true, message: 'Kategori berhasil diupdate' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };
 
@@ -100,6 +100,6 @@ exports.remove = async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan' });
     res.json({ success: true, message: 'Kategori berhasil dihapus' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
   }
 };

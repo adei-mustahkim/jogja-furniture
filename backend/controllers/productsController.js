@@ -38,7 +38,7 @@ exports.getAll = async (req, res) => {
       [...params, parseInt(limit), offset]
     );
     res.json({ success: true, data: rows, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.getOne = async (req, res) => {
@@ -55,7 +55,7 @@ exports.getOne = async (req, res) => {
     const [tags] = await db.query('SELECT tag FROM product_tags WHERE product_id = ?', [product.id]);
     await db.query('UPDATE products SET view_count = view_count + 1 WHERE id = ?', [product.id]);
     res.json({ success: true, data: { ...product, images, tags: tags.map(t => t.tag) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.getFeatured = async (req, res) => {
@@ -70,7 +70,7 @@ exports.getFeatured = async (req, res) => {
       [limit]
     );
     res.json({ success: true, data: rows });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // ── ADMIN ─────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ exports.getAdminById = async (req, res) => {
     const [images] = await db.query('SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC', [product.id]);
     const [tags] = await db.query('SELECT tag FROM product_tags WHERE product_id = ?', [product.id]);
     res.json({ success: true, data: { ...product, images, tags: tags.map(t => t.tag) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.getAllAdmin = async (req, res) => {
@@ -127,7 +127,7 @@ exports.getAllAdmin = async (req, res) => {
       [...params, parseInt(limit), offset]
     );
     res.json({ success: true, data: rows, pagination: { total: total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // GET products awaiting website publish (for admin_website)
@@ -146,7 +146,7 @@ exports.getNewFromWarehouse = async (req, res) => {
       [parseInt(limit), offset]
     );
     res.json({ success: true, data: rows, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // CREATE product (admin_gudang — warehouse input)
@@ -192,7 +192,7 @@ exports.create = async (req, res) => {
 
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'CREATE', module: 'Products', description: `Tambah produk: ${name}`, recordId: productId, recordType: 'product', ipAddress: getIp(req) });
     res.status(201).json({ success: true, message: 'Produk berhasil dibuat dan masuk antrian Admin Website', id: productId, slug });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // UPDATE product - warehouse fields (admin_gudang)
@@ -247,7 +247,7 @@ exports.update = async (req, res) => {
 
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'UPDATE', module: 'Products', description: `Update produk ID ${id}: ${name}`, recordId: parseInt(id), recordType: 'product', ipAddress: getIp(req) });
     res.json({ success: true, message: 'Produk berhasil diupdate' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // UPDATE CMS fields only (admin_website) — edit judul, deskripsi, SEO, foto
@@ -307,7 +307,7 @@ exports.updateCMS = async (req, res) => {
 
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'UPDATE_CMS', module: 'Products', description: `Update CMS produk ID ${id}`, recordId: parseInt(id), recordType: 'product', ipAddress: getIp(req) });
     res.json({ success: true, message: 'Konten produk berhasil diupdate' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // PUBLISH product (admin_website)
@@ -322,7 +322,7 @@ exports.publish = async (req, res) => {
     );
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'PUBLISH', module: 'Products', description: `Publish produk: ${prod.name}`, recordId: prod.id, recordType: 'product', ipAddress: getIp(req) });
     res.json({ success: true, message: `Produk "${prod.name}" berhasil dipublish ke website` });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // UNPUBLISH product (admin_website)
@@ -334,7 +334,7 @@ exports.unpublish = async (req, res) => {
     await db.query("UPDATE products SET publish_status='hidden', is_active=0 WHERE id=?", [req.params.id]);
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'UNPUBLISH', module: 'Products', description: `Unpublish produk: ${prod.name}`, recordId: prod.id, recordType: 'product', ipAddress: getIp(req) });
     res.json({ success: true, message: `Produk "${prod.name}" berhasil disembunyikan dari website` });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // UPDATE status (admin_website)
@@ -353,7 +353,7 @@ exports.updateStatus = async (req, res) => {
 
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'STATUS_UPDATE', module: 'Products', description: `Status produk ${prod.name} → ${status}`, recordId: prod.id, recordType: 'product', ipAddress: getIp(req) });
     res.json({ success: true, message: `Status produk berhasil diubah ke: ${status}` });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 // DELETE product
@@ -374,7 +374,7 @@ exports.remove = async (req, res) => {
 
     log({ userId: req.admin.id, username: req.admin.username, role: req.admin.role, action: 'DELETE', module: 'Products', description: `Hapus produk ID ${req.params.id}`, ipAddress: getIp(req) });
     res.json({ success: true, message: 'Produk berhasil dihapus' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.deleteImage = async (req, res) => {
@@ -385,7 +385,7 @@ exports.deleteImage = async (req, res) => {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     await db.query('DELETE FROM product_images WHERE id=?', [req.params.imageId]);
     res.json({ success: true, message: 'Gambar berhasil dihapus' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
 
 exports.setPrimaryImage = async (req, res) => {
@@ -396,5 +396,5 @@ exports.setPrimaryImage = async (req, res) => {
     const [img] = await db.query('SELECT filename FROM product_images WHERE id=?', [imageId]);
     if (img.length) await db.query('UPDATE products SET thumbnail=? WHERE id=?', [img[0].filename, productId]);
     res.json({ success: true, message: 'Gambar utama berhasil diset' });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+  } catch (err) { res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." }); }
 };
