@@ -333,3 +333,76 @@ tbody tr:hover td { background:var(--gray50); }
 .ts-wrapper.focus { border-color: var(--accent) !important; background: var(--white) !important; }
 .ts-control { background: transparent !important; border: none !important; padding: .6rem .85rem !important; font-family: var(--font-body) !important; font-size: .85rem !important; color: var(--text) !important; min-height: 38px !important; }
 .ts-dropdown { border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important; border-color: var(--accent) !important; }
+
+
+/* ── SETTINGS TABS ── */
+#settingsTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--gray200);
+  padding-bottom: .75rem;
+}
+
+.settings-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .45rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--gray200);
+  background: var(--white);
+  color: var(--text-light);
+  font-size: .8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--trans);
+  white-space: nowrap;
+}
+
+.settings-tab:hover {
+  border-color: var(--accent);
+  color: var(--primary);
+  background: var(--accent-warm);
+}
+
+.settings-tab.active {
+  background: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+}
+
+/* Panel: sembunyikan semua, tampilkan hanya yang active */
+.settings-panel {
+  display: none;
+}
+
+.settings-panel.active {
+  display: block;
+}
+
+/* Grid 2 kolom untuk form settings */
+#settingsPanels .form-group {
+  margin-bottom: 1.25rem;
+}
+
+#settingsPanels .settings-panel {
+  max-width: 720px;
+}
+
+
+/* ── PAGE SUBTITLE (card-header description) ── */
+.page-subtitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-light);
+  font-family: var(--font-body);
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.page-subtitle .ps-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
