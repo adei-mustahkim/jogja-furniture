@@ -5,9 +5,9 @@
 
 'use strict';
 
-const db     = require('../config/database');
+const db = require('../config/database');
 const bcrypt = require('bcryptjs');
-const jwt    = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 
 // ── LOGIN ──────────────────────────────────────────────────────
 exports.login = async (req, res) => {
@@ -42,7 +42,7 @@ exports.login = async (req, res) => {
     const admin = rows[0];
 
     // Update last login (non-blocking)
-    db.query('UPDATE admin_users SET last_login = NOW() WHERE id = ?', [admin.id]).catch(() => {});
+    db.query('UPDATE admin_users SET last_login = NOW() WHERE id = ?', [admin.id]).catch(() => { });
 
     const token = jwt.sign(
       { id: admin.id, username: admin.username, role: admin.role },
@@ -55,11 +55,12 @@ exports.login = async (req, res) => {
       message: 'Login berhasil',
       token,
       admin: {
-        id:        admin.id,
-        username:  admin.username,
-        email:     admin.email,
+        id: admin.id,
+        username: admin.username,
+        email: admin.email,
         full_name: admin.full_name,
-        role:      admin.role,
+        role: admin.role,
+        last_login: admin.last_login,
       },
     });
   } catch (err) {
@@ -117,17 +118,17 @@ exports.changePassword = async (req, res) => {
 // ── DASHBOARD STATS ────────────────────────────────────────────
 exports.getDashboard = async (req, res) => {
   try {
-    const [[{ total_products }]]    = await db.query("SELECT COUNT(*) as total_products FROM products WHERE is_active = 1");
-    const [[{ total_categories }]]  = await db.query("SELECT COUNT(*) as total_categories FROM categories WHERE is_active = 1");
-    const [[{ total_services }]]    = await db.query("SELECT COUNT(*) as total_services FROM services WHERE is_active = 1");
-    const [[{ total_testimonials }]]= await db.query("SELECT COUNT(*) as total_testimonials FROM testimonials");
-    const [[{ unread_contacts }]]   = await db.query("SELECT COUNT(*) as unread_contacts FROM contacts WHERE is_read = 0");
-    const [[{ total_contacts }]]    = await db.query("SELECT COUNT(*) as total_contacts FROM contacts");
+    const [[{ total_products }]] = await db.query("SELECT COUNT(*) as total_products FROM products WHERE is_active = 1");
+    const [[{ total_categories }]] = await db.query("SELECT COUNT(*) as total_categories FROM categories WHERE is_active = 1");
+    const [[{ total_services }]] = await db.query("SELECT COUNT(*) as total_services FROM services WHERE is_active = 1");
+    const [[{ total_testimonials }]] = await db.query("SELECT COUNT(*) as total_testimonials FROM testimonials");
+    const [[{ unread_contacts }]] = await db.query("SELECT COUNT(*) as unread_contacts FROM contacts WHERE is_read = 0");
+    const [[{ total_contacts }]] = await db.query("SELECT COUNT(*) as total_contacts FROM contacts");
     const [[{ featured_products }]] = await db.query("SELECT COUNT(*) as featured_products FROM products WHERE is_featured = 1 AND is_active = 1");
-    const [[{ total_customers }]]   = await db.query("SELECT COUNT(*) as total_customers FROM customers");
-    const [[{ total_orders }]]      = await db.query("SELECT COUNT(*) as total_orders FROM orders");
-    const [[{ today_orders }]]      = await db.query("SELECT COUNT(*) as today_orders FROM orders WHERE DATE(created_at) = CURDATE()");
-    const [[{ total_suppliers }]]   = await db.query("SELECT COUNT(*) as total_suppliers FROM suppliers");
+    const [[{ total_customers }]] = await db.query("SELECT COUNT(*) as total_customers FROM customers");
+    const [[{ total_orders }]] = await db.query("SELECT COUNT(*) as total_orders FROM orders");
+    const [[{ today_orders }]] = await db.query("SELECT COUNT(*) as today_orders FROM orders WHERE DATE(created_at) = CURDATE()");
+    const [[{ total_suppliers }]] = await db.query("SELECT COUNT(*) as total_suppliers FROM suppliers");
 
     const [recent_contacts] = await db.query(
       'SELECT id, name, subject, created_at, is_read FROM contacts ORDER BY created_at DESC LIMIT 5'
