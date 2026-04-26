@@ -660,13 +660,14 @@
             </select>
             <select id="prodStatusFilter" onchange="loadProducts()">
               <option value="">Semua Status</option>
+              <option value="low_stock">⚠️ Stok Kritis (≤ 3)</option>
+              <option value="out_of_stock">❌ Habis (Stok 0)</option>
               <option value="new">🆕 Baru</option>
               <option value="draft">📝 Draft</option>
               <option value="review">🔍 Review</option>
               <option value="ready">✅ Siap Publish</option>
               <option value="published">🌐 Published</option>
               <option value="hidden">🙈 Hidden</option>
-              <option value="out_of_stock">❌ Out of Stock</option>
               <option value="archived">📦 Archived</option>
             </select>
           </div>

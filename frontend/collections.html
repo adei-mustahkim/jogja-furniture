@@ -759,6 +759,7 @@
       <div class="prod-card" onclick="window.location='product.html?slug=${p.slug}'">
         <div class="prod-img" style="${p.thumbnail ? '' : gradientStyle(p.color_from, p.color_to)}">
           ${thumb}
+          ${p.warehouse_stock === 0 ? '<div class="sold-out-badge">SOLD OUT</div>' : (p.warehouse_stock <= 3 ? '<div class="low-stock-badge">STOK TERBATAS</div>' : '')}
         </div>
         <button class="prod-fav ${isFav ? 'active' : ''}" onclick="toggleFav(event,${p.id})" title="Favorit">
           ${isFav ? '❤️' : '🤍'}
@@ -939,6 +940,7 @@
     <div class="detail-grid">
       <div class="detail-item"><label>Kategori</label><p>${p.category_name || '—'}</p></div>
       <div class="detail-item"><label>Harga</label><p>${p.price_label || 'Hubungi Kami'}</p></div>
+      <div class="detail-item"><label>Ketersediaan</label><p>${p.warehouse_stock === 0 ? `<span style="color:#dc3545;font-weight:600">❌ Sold Out / Habis</span>` : (p.warehouse_stock <= 3 ? `<span style="color:#FF9800;font-weight:600">⚠️ Stok Terbatas (${p.warehouse_stock})</span>` : `<span style="color:#28a745;font-weight:600">✅ Stok Tersedia</span>`)}</p></div>
       ${p.material ? `<div class="detail-item"><label>Material</label><p>${p.material}</p></div>` : ''}
       ${p.dimensions ? `<div class="detail-item"><label>Ukuran</label><p>${p.dimensions}</p></div>` : ''}
       ${p.description ? `<div class="detail-item full"><label>Deskripsi</label><p style="white-space:pre-line">${p.description}</p></div>` : ''}

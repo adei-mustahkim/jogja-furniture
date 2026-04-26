@@ -5,9 +5,9 @@
 
 'use strict';
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // CONFIG & STATE
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 const API = '/api/admin';
 let token = localStorage.getItem('jf_token');
 let me = JSON.parse(localStorage.getItem('jf_user') || 'null');
@@ -138,9 +138,9 @@ function initTomSelect(id) {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // AUTH & INIT
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 window.addEventListener('DOMContentLoaded', () => {
   if (!token || !me) { window.location.href = 'index.html'; return; }
   initUI();
@@ -210,9 +210,9 @@ function initUI() {
 function roleLabel(r) {
   return { superadmin: '👑 Superadmin', admin_gudang: '🏭 Admin Gudang', admin_website: '🌐 Admin Website', marketing: '📢 Marketing' }[r] || r;
 }
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // SIDEBAR BUILDER
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 const MENUS = {
   cms: [
     { icon: '📊', label: 'Dashboard', page: 'dashboard' },
@@ -312,9 +312,9 @@ function buildSidebar(module = 'cms') {
   if (firstItem) firstItem.classList.add('active');
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // NAVIGATION
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 function navigateTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -370,9 +370,9 @@ function navigateTo(page) {
   if (loaders[page]) loaders[page]();
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // MODULE SWITCHER (Superadmin)
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 function switchModule(mod) {
   currentModule = mod;
   document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
@@ -386,9 +386,9 @@ function switchModule(mod) {
   navigateTo(firstPages[mod] || 'dashboard');
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // MODAL HELPERS
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 function openModal(id) { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) {
   document.getElementById(id)?.classList.remove('open');
@@ -418,9 +418,9 @@ function getVal(id) { const el = document.getElementById(id); return el ? el.val
 function getChecked(id) { const el = document.getElementById(id); return el ? el.checked : false; }
 function setChecked(id, v) { const el = document.getElementById(id); if (el) el.checked = !!v; }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // PAGINATION BUILDER
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 function buildPagination(containerId, pagination, onPageClick) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -438,9 +438,9 @@ function buildPagination(containerId, pagination, onPageClick) {
     </div>`;
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // DASHBOARD
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 async function loadDashboard() {
   try {
     const data = await api('GET', '/dashboard');
@@ -583,15 +583,26 @@ async function loadMarketingDashboard() {
 
 function buildStatCards(items) {
   return items.map(i => `
-    <div class="stat-card">
+    <div class="stat-card" ${i.onclick ? `onclick="${i.onclick}" style="cursor:pointer"` : ''}>
       <div class="stat-icon ${i.cls}">${i.icon}</div>
       <div><div class="stat-num">${i.val ?? 0}</div><div class="stat-lbl">${i.label}</div></div>
     </div>`).join('');
 }
 
-// ══════════════════════════════════════════════════════════════
+function filterProductsBy(status) {
+  navigateTo('products');
+  const el = document.getElementById('prodStatusFilter');
+  if (el) {
+    el.value = status;
+    // Jika menggunakan TomSelect, harus di-sync
+    if (el.tomselect) el.tomselect.setValue(status);
+    loadProducts(1);
+  }
+}
+
+// --------------------------------------------------------------------------------------------------
 // PRODUCTS
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 let prodPage = 1;
 async function loadProducts(page = 1) {
   prodPage = page;
@@ -604,6 +615,7 @@ async function loadProducts(page = 1) {
   const search = getVal('prodSearch');
   const cat = getVal('prodCatFilter');
   const status = getVal('prodStatusFilter');
+  adjustStatusFilterByRole();
   try {
     const data = await api('GET', `/products?page=${page}&limit=20&search=${encodeURIComponent(search)}&category=${cat}&status=${status}`);
     const rows = data.data;
@@ -651,6 +663,23 @@ async function loadProducts(page = 1) {
       });
     }
   } catch (e) { toast(e.message, 'error'); }
+}
+
+
+function adjustStatusFilterByRole() {
+  const el = document.getElementById('prodStatusFilter');
+  if (!el) return;
+  const role = me.role;
+  const options = el.querySelectorAll('option');
+  options.forEach(opt => {
+    const val = opt.value;
+    if (!val) return;
+    let visible = true;
+    if (role === 'admin_gudang') visible = ['low_stock', 'out_of_stock', 'archived'].includes(val);
+    else if (role === 'admin_website') visible = ['new', 'draft', 'review', 'ready', 'published', 'hidden'].includes(val);
+    else if (role === 'marketing') visible = ['published', 'low_stock', 'out_of_stock'].includes(val);
+    opt.style.display = visible ? '' : 'none';
+  });
 }
 
 async function loadNewProducts(page = 1) {
@@ -724,7 +753,7 @@ function openProductModal(id = null, isViewOnly = false) {
   const tabContent = document.getElementById('tabContent');
   const tabImages = document.getElementById('tabImages');
   const tabSeo = document.getElementById('tabSeo');
-  
+
   const isGudang = me.role === 'admin_gudang';
   const isWebMark = me.role === 'admin_website' || me.role === 'marketing';
   const isSuper = me.role === 'superadmin';
@@ -916,9 +945,9 @@ async function deleteProductImg(productId, imageId) {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // CATEGORIES
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 async function loadCategories() {
   try {
     const data = await api('GET', '/categories');
@@ -994,9 +1023,9 @@ async function deleteCategory(id) {
   catch (e) { toast(e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // SERVICES
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 async function loadServices() {
   try {
     const data = await api('GET', '/services');
@@ -1063,9 +1092,9 @@ async function deleteService(id) {
   catch (e) { toast(e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // TESTIMONIALS
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 async function loadTestimonials() {
   try {
     const data = await api('GET', '/testimonials');
@@ -1128,9 +1157,9 @@ async function deleteTestimonial(id) {
   catch (e) { toast(e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // CONTACTS
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 async function loadContacts() {
   try {
     const data = await api('GET', '/contacts');
@@ -1164,9 +1193,9 @@ async function deleteContact(id) {
   catch (e) { toast(e.message, 'error'); }
 }
 
-// ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ 
+// --------------------------------------------------------------------------------------------------
 // SETTINGS
-// ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ ═ 
+// --------------------------------------------------------------------------------------------------
 async function loadSettings() {
   const tabs = document.getElementById('settingsTabs');
   const panels = document.getElementById('settingsPanels');
@@ -1190,7 +1219,7 @@ async function loadSettings() {
       if (!groups[s.group_name]) groups[s.group_name] = [];
       groups[s.group_name].push(s);
     });
-    const groupLabels = { general: '—', hero: '—', about: '—', contact: '📞 Kontak', stats: '📊 Statistik', social: '—', footer: '📄 Footer' };
+    const groupLabels = { general: '⚙️ Umum', hero: '🖼️ Hero', about: '📖 Tentang', contact: '📞 Kontak', stats: '📊 Statistik', social: '📱 Sosial', footer: '📄 Footer' };
     tabs.innerHTML = ''; panels.innerHTML = '';
     let first = true;
     Object.keys(groups).forEach(grp => {
@@ -1265,17 +1294,17 @@ async function uploadSettingImage(key) {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // WAREHOUSE DASHBOARD
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 async function loadWarehouseDashboard() {
   try {
     const data = await api('GET', '/warehouse/dashboard');
     const s = data.data.stats;
     document.getElementById('whStats').innerHTML = buildStatCards([
       { icon: '📦', label: 'Total Produk', val: s.total_products, cls: 'brown' },
-      { icon: '⚠️', label: 'Stok Kritis (≤3)', val: s.low_stock, cls: 'red' },
-      { icon: '❌', label: 'Habis', val: s.out_of_stock, cls: 'red' },
+      { icon: '⚠️', label: 'Stok Kritis (≤3)', val: s.low_stock, cls: 'red', onclick: "filterProductsBy('low_stock')" },
+      { icon: '❌', label: 'Habis', val: s.out_of_stock, cls: 'red', onclick: "filterProductsBy('out_of_stock')" },
       { icon: '🏢', label: 'Supplier', val: s.total_suppliers, cls: 'green' },
       { icon: '👥', label: 'Customer', val: s.total_customers, cls: 'blue' },
       { icon: '🛒', label: 'Order Proses', val: s.pending_orders, cls: 'orange' },
@@ -1336,9 +1365,9 @@ async function loadWarehouseDashboard() {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // STOCK MANAGEMENT
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 async function submitStockIn() {
   const productId = getVal('siProduct');
   const qty = parseInt(getVal('siQty'));
@@ -1562,9 +1591,9 @@ function exportInvoicePDF() {
   };
   html2pdf().set(opt).from(el).save();
 }
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // SUPPLIERS
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 let supPage = 1, supData = [];
 async function loadSuppliers(page = 1) {
   supPage = page;
@@ -1644,9 +1673,9 @@ async function deleteSupplier(id) {
   catch (e) { toast(e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // CUSTOMERS
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 let cusPage = 1, cusData = [];
 async function loadCustomers(page = 1) {
   cusPage = page;
@@ -1678,7 +1707,7 @@ async function loadCustomers(page = 1) {
 async function viewCustomerHistory(id) {
   const c = cusData.find(x => x.id == id);
   if (!c) return;
-  
+
   document.getElementById('modalCusHistoryTitle').innerText = `Riwayat Transaksi: ${c.name}`;
   document.getElementById('cusHistoryBody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1rem">Memuat...</td></tr>';
   openModal('modalCusHistory');
@@ -1695,7 +1724,7 @@ async function viewCustomerHistory(id) {
         <td>${statusBadge(o.payment_status)}</td>
         <td><button class="btn btn-sm btn-outline" onclick="viewOrderSummary(${o.id})" title="Detail Order">🔍</button></td>
       </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text-light)">Belum ada transaksi</td></tr>';
-  } catch (e) { 
+  } catch (e) {
     toast(e.message, 'error');
     document.getElementById('cusHistoryBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger)">Gagal memuat data</td></tr>';
   }
@@ -1838,9 +1867,9 @@ async function deleteCustomer(id) {
   catch (e) { toast(e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // ORDERS
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 let ordPage = 1, orderItems = [], ordData = [];
 
 async function loadOrderStats() {
@@ -2382,9 +2411,9 @@ function renderInvoice(data) {
 
 
 
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 // USERS (Superadmin)
-// ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------------------------------------
 let logPage = 1;
 async function loadActivityLogs(page = 1) {
   logPage = page;
@@ -2479,9 +2508,9 @@ async function loadControlCenter() {
       const ccRoleChart = document.getElementById('ccRoleChart');
       if (ccRoleChart) {
         ccRoleChart.innerHTML = users_by_role.map((r, i) => {
-           const colors = ['#5C2E0E', '#D4A97A', '#C49A6C', '#8B4513'];
-           return `<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.3rem">
-             <span><span style="display:inline-block;width:10px;height:10px;background:${colors[i%colors.length]};border-radius:2px;margin-right:6px"></span>${roleLabel(r.role)}</span>
+          const colors = ['#5C2E0E', '#D4A97A', '#C49A6C', '#8B4513'];
+          return `<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.3rem">
+             <span><span style="display:inline-block;width:10px;height:10px;background:${colors[i % colors.length]};border-radius:2px;margin-right:6px"></span>${roleLabel(r.role)}</span>
              <strong>${r.count}</strong>
            </div>`;
         }).join('');
@@ -2536,7 +2565,7 @@ function openUserModal(id = null) {
   currentEditUserId = id;
   const title = document.getElementById('modalUserTitle');
   const passGroup = document.getElementById('uPassGroup');
-  
+
   setVal('uUsername', '');
   setVal('uRole', 'marketing');
   setVal('uEmail', '');
@@ -2567,8 +2596,8 @@ function openUserModal(id = null) {
 
 async function saveUser() {
   const username = getVal('uUsername'), role = getVal('uRole'), email = getVal('uEmail'),
-        full_name = getVal('uName'), phone = getVal('uPhone'), password = getVal('uPassword'),
-        is_active = document.getElementById('uActive').checked ? 1 : 0;
+    full_name = getVal('uName'), phone = getVal('uPhone'), password = getVal('uPassword'),
+    is_active = document.getElementById('uActive').checked ? 1 : 0;
 
   if (!email || !role || (!currentEditUserId && (!username || !password))) {
     toast('Field wajib (*) harus diisi', 'warning'); return;
@@ -2618,9 +2647,9 @@ async function forceLogoutUser(id) {
 }
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// --------------------------------------------------------------------------------------------------
 // PROFILE & NOTIFICATIONS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// --------------------------------------------------------------------------------------------------
 async function loadNotifications() {
   try {
     const data = await api('GET', '/contacts');
@@ -2647,7 +2676,7 @@ function loadProfile() {
       <div style="display:grid; grid-template-columns:100px 1fr; gap:.5rem; font-size:.9rem; border-top:1px solid var(--gray100); padding-top:1.2rem">
         <div style="color:var(--text-light)">Username</div><div><strong>${me.username}</strong></div>
         <div style="color:var(--text-light)">Email</div><div><strong>${me.email}</strong></div>
-        <div style="color:var(--text-light)">Telepon</div><div><strong>${me.phone || 'â€”'}</strong></div>
+        <div style="color:var(--text-light)">Telepon</div><div><strong>${me.phone || '-'}</strong></div>
         <div style="color:var(--text-light)">Terakhir Login</div><div><strong>${fmtDate(me.last_login)}</strong></div>
       </div>
     </div>
@@ -2669,9 +2698,9 @@ async function doChangePassword() {
 
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// --------------------------------------------------------------------------------------------------
 // PROFILE & NOTIFICATIONS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// --------------------------------------------------------------------------------------------------
 async function loadNotifications() {
   try {
     const data = await api('GET', '/contacts');
@@ -2698,7 +2727,7 @@ function loadProfile() {
       <div style="display:grid; grid-template-columns:100px 1fr; gap:.5rem; font-size:.9rem; border-top:1px solid var(--gray100); padding-top:1.2rem">
         <div style="color:var(--text-light)">Username</div><div><strong>${me.username}</strong></div>
         <div style="color:var(--text-light)">Email</div><div><strong>${me.email}</strong></div>
-        <div style="color:var(--text-light)">Telepon</div><div><strong>${me.phone || 'â€”'}</strong></div>
+        <div style="color:var(--text-light)">Telepon</div><div><strong>${me.phone || '-'}</strong></div>
         <div style="color:var(--text-light)">Terakhir Login</div><div><strong>${fmtDate(me.last_login)}</strong></div>
       </div>
     </div>
@@ -2718,13 +2747,13 @@ async function doChangePassword() {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// --------------------------------------------------------------------------------------------------
 // EXPORT TRANSACTIONS (PREMIUM)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// --------------------------------------------------------------------------------------------------
 async function exportTransactionPDF() {
   const btn = event?.target;
   const oldText = btn ? btn.textContent : '📄 Export PDF';
-  if (btn) { btn.disabled = true; btn.textContent = 'â³'; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
 
   const win = window.open('', '_blank');
   if (!win) {
@@ -2759,7 +2788,7 @@ async function exportTransactionPDF() {
     const typeLabel = { '': 'Semua Tipe', in: 'Barang Masuk', out: 'Barang Keluar', adjustment: 'Adjustment' };
 
     const rows = items.map(t => {
-      const date = t.created_at ? new Date(t.created_at).toLocaleString('id-ID') : 'â€”';
+      const date = t.created_at ? new Date(t.created_at).toLocaleString('id-ID') : '-';
       return '<tr>' +
         '<td>' + date + '</td>' +
         '<td><strong>' + t.product_name + '</strong>' + (t.sku ? '<br><small>' + t.sku + '</small>' : '') + '</td>' +
@@ -2767,9 +2796,9 @@ async function exportTransactionPDF() {
         '<td style="text-align:center;font-weight:700;color:' + (t.type === 'in' ? '#2E7D32' : '#C62828') + '">' + (t.type === 'in' ? '+' : '-') + t.qty + '</td>' +
         '<td style="text-align:center;color:#888">' + t.qty_before + '</td>' +
         '<td style="text-align:center;font-weight:600">' + t.qty_after + '</td>' +
-        '<td>' + (t.reference_no || 'â€”') + '</td>' +
-        '<td>' + (t.created_by_name || 'â€”') + '</td>' +
-      '</tr>';
+        '<td>' + (t.reference_no || '-') + '</td>' +
+        '<td>' + (t.created_by_name || '-') + '</td>' +
+        '</tr>';
     }).join('');
 
     const html = '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>Riwayat Transaksi Stok</title>' +
@@ -2803,7 +2832,7 @@ async function exportTransactionPDF() {
       '</div>' +
       '<div class="report-card" id="printArea">' +
       '<div class="header"><div><div class="co-name">' + (company.site_name || 'JOGJA FURNITURE') + '</div>' +
-      '<div style="font-size:11px;color:#6B5040">' + (company.address || 'â€”') + '</div></div>' +
+      '<div style="font-size:11px;color:#6B5040">' + (company.address || '-') + '</div></div>' +
       '<div><div class="report-title">LAPORAN TRANSAKSI STOK</div><div class="report-meta">' +
       'Periode: ' + (from || 'Awal') + ' - ' + (to || 'Sekarang') + '<br>' +
       'Tipe: ' + (typeLabel[type] || 'Semua') + '<br>' +
@@ -2824,10 +2853,10 @@ async function exportTransactionPDF() {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ----------------------------------------------------------------------------------------------------
 // CSS ANIMATIONS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-(function() {
+// ----------------------------------------------------------------------------------------------------
+(function () {
   const style = document.createElement('style');
   style.textContent = `
     @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }

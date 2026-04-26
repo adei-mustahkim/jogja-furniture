@@ -1,4 +1,4 @@
-# 🪵 Jogja Furniture Decoration — Enterprise System v2.1
+# 🪵 Jogja Furniture Decoration — Enterprise System v2.1.1
 
 Sistem manajemen bisnis furnitur full-stack berbasis web. Mencakup website publik, admin panel multi-role, manajemen gudang (WMS), CMS, dan sistem order terintegrasi.
 
@@ -50,11 +50,12 @@ Sistem manajemen bisnis furnitur full-stack berbasis web. Mencakup website publi
 - Fully responsive (mobile-first)
 
 ### Admin Panel
-- Dashboard statistik real-time
+- Dashboard statistik real-time dengan filter per-role
 - Manajemen produk dengan publish workflow
 - CMS konten website (hero, about, settings)
-- Manajemen order + invoice cetak
-- Manajemen stok gudang (barang masuk/keluar)
+- Manajemen order + invoice cetak profesional (PDF)
+- Manajemen stok gudang (barang masuk/keluar/adjustment)
+- **Visibilitas Stok Otomatis** (Label "Sold Out" & "Stok Terbatas")
 - Manajemen supplier dan customer
 - Sistem notifikasi real-time
 - Activity log audit trail
@@ -104,9 +105,18 @@ Fokus pada penjualan dan hubungan pelanggan.
 - ✅ Manajemen customer
 - ✅ Lihat laporan order
 - ✅ Lihat produk (published only)
-- ❌ Edit produk / stok
+- ❌ Edit produk / stok (Hanya bisa melihat detail tanpa mengubah data)
 - ❌ Settings website
 - ❌ Manajemen user
+
+---
+
+## 📦 Logika Visibilitas Stok (WMS Integration)
+
+Sistem secara otomatis memberikan label pada produk di frontend berdasarkan jumlah stok di gudang:
+- **🔴 SOLD OUT**: Muncul jika stok = 0. Tombol beli/order tetap ada namun dengan indikator habis.
+- **🟠 STOK TERBATAS**: Muncul jika stok antara 1 s/d 3 unit. Memberikan efek *urgency* kepada pembeli.
+- **🟢 TERSEDIA**: Jika stok > 3 unit, label tidak ditampilkan (kondisi normal).
 
 ---
 
@@ -261,10 +271,10 @@ File `backend/database_v2.sql` berisi:
 
 | Username | Password | Role |
 |---|---|---|
-| `superadmin` | `SuperAdmin@2024!` | superadmin |
-| `gudang01` | `Gudang@2024!` | admin_gudang |
-| `website01` | `Website@2024!` | admin_website |
-| `marketing01` | `Marketing@2024!` | marketing |
+| `admin` | `admin123` | superadmin |
+| `gudang01` | `gudang01` | admin_gudang |
+| `website01` | `website01` | admin_website |
+| `marketing01` | `marketing01` | marketing |
 
 > ⚠️ **WAJIB**: Ganti semua password setelah pertama kali login melalui Admin Panel → Profile → Ganti Password.
 

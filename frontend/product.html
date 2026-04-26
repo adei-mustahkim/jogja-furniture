@@ -816,7 +816,7 @@
           "url": window.location.href,
           "priceCurrency": "IDR",
           "price": priceNumeric,
-          "availability": "https://schema.org/InStock",
+          "availability": currentProduct.warehouse_stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
           "itemCondition": "https://schema.org/NewCondition"
         },
         "aggregateRating": {
@@ -853,7 +853,7 @@
       if (p.category_name) specs.push(['Kategori', p.category_name]);
       document.getElementById('quickSpecs').innerHTML = specs.map(([k, v]) =>
         `<tr><td>${k}</td><td>${v}</td></tr>`
-      ).join('');
+      ).join('') + `<tr><td>Ketersediaan</td><td>${p.warehouse_stock === 0 ? '<span style="color:#dc3545;font-weight:600">❌ Sold Out / Habis</span>' : (p.warehouse_stock <= 3 ? '<span style="color:#FF9800;font-weight:600">⚠️ Stok Terbatas ('+p.warehouse_stock+')</span>' : '<span style="color:#28a745;font-weight:600">✅ Stok Tersedia</span>')}</td></tr>`;
 
       // Specification block
       if (p.specification) {
@@ -884,6 +884,13 @@
       if (p.is_featured) {
         const priceEl = document.getElementById('detailPrice');
         priceEl.innerHTML += ' <span class="prod-badge" style="font-size:.75rem;vertical-align:middle">⭐ Unggulan</span>';
+      }
+      if (p.warehouse_stock === 0) {
+        const priceEl = document.getElementById('detailPrice');
+        priceEl.innerHTML += ' <span class="sold-out-badge" style="position:static;display:inline-block;margin-left:.5rem;vertical-align:middle">SOLD OUT</span>';
+      } else if (p.warehouse_stock <= 3) {
+        const priceEl = document.getElementById('detailPrice');
+        priceEl.innerHTML += ' <span class="low-stock-badge" style="position:static;display:inline-block;margin-left:.5rem;vertical-align:middle">STOK TERBATAS</span>';
       }
 
       // Fav button

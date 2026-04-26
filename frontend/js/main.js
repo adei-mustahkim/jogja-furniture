@@ -398,9 +398,10 @@ function renderProductCard(p, i = 0) {
          onclick="window.location='product.html?slug=${p.slug}'">
       <div class="prod-img" style="${p.thumbnail ? '' : gradientStyle(p.color_from, p.color_to)}">
         ${thumb}
-        <div class=\"prod-overlay\"><span class=\"prod-view-btn\">Lihat Detail</span></div>
+        ${p.warehouse_stock === 0 ? '<div class="sold-out-badge">SOLD OUT</div>' : (p.warehouse_stock <= 3 ? '<div class="low-stock-badge">STOK TERBATAS</div>' : '')}
+        <div class="prod-overlay"><span class="prod-view-btn">Lihat Detail</span></div>
       </div>
-      <button class=\"prod-fav ${isFav ? 'active' : ''}" onclick="toggleFav(event, ${p.id})" title="Favorit">
+      <button class="prod-fav ${isFav ? 'active' : ''}" onclick="toggleFav(event, ${p.id})" title="Favorit">
         ${isFav ? '❤️' : '🤍'}
       </button>
       <div class="prod-body">
@@ -648,6 +649,10 @@ window.openProductDetail = async function(slug) {
       <div class="detail-item">
         <label>Harga</label>
         <p>${p.price_label || 'Hubungi Kami'}</p>
+      </div>
+      <div class="detail-item">
+        <label>Ketersediaan</label>
+        <p>${p.warehouse_stock === 0 ? `<span style="color:var(--danger)">❌ Sold Out / Habis</span>` : (p.warehouse_stock <= 3 ? `<span style="color:#FF9800;font-weight:600">⚠️ Stok Terbatas (${p.warehouse_stock})</span>` : `<span style="color:var(--success)">✅ Stok Tersedia</span>`)}</p>
       </div>
       ${p.material ? `<div class="detail-item"><label>Material</label><p>${p.material}</p></div>` : ''}
       ${p.dimensions ? `<div class="detail-item"><label>Ukuran</label><p>${p.dimensions}</p></div>` : ''}
