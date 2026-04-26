@@ -47,7 +47,15 @@ Sistem manajemen bisnis furnitur full-stack berbasis web. Mencakup website publi
 - Testimonial pelanggan
 - Form kontak
 - Integrasi WhatsApp
-- Fully responsive (mobile-first)
+- # Jogja Furniture Enterprise v2.1.1 (Production Ready)
+
+## Terbaru di v2.1.1:
+- **Full Notification System**: Notifikasi real-time untuk order dan pesan masuk dengan halaman daftar lengkap.
+- **Improved UI/UX**: Desain dropdown notifikasi yang lebih premium dan bersih.
+- **Auto Stock Management**: Sinkronisasi stok otomatis yang lebih cerdas (Out of Stock auto-status).
+- **Profile Data Sync**: Perbaikan bug "Terakhir Login" dan sinkronisasi data profil global.
+- **RBAC Hardening**: Perbaikan hak akses (403 Forbidden) untuk role Marketing.
+- **Clean Code**: Pembersihan karakter enkoding yang mengganggu.
 
 ### Admin Panel
 - Dashboard statistik real-time dengan filter per-role
