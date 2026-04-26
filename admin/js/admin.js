@@ -21,7 +21,7 @@ let suppliers = [];
 let products = [];
 let currentPageId = 'dashboard';
 
-// ──────────────── Page Rules & Logic ────────────────
+// ---------------- Page Rules & Logic ----------------
 const PAGE_RULES = {
   'dashboard': `
     <ul>
@@ -75,13 +75,13 @@ const PAGE_RULES = {
     </ul>`
 };
 
-// ──────────────── Debounce ────────────────
+// ---------------- Debounce ----------------
 const debounce = (fn, ms) => {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 };
 
-// ──────────────── Toast ────────────────
+// ---------------- Toast ----------------
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
   const colors = { success: '#28a745', error: '#dc3545', warning: '#ffc107', info: '#17a2b8' };
@@ -91,7 +91,7 @@ function toast(msg, type = 'success') {
   setTimeout(() => el.remove(), 3800);
 }
 
-// ──────────────── API Helper ────────────────
+// ---------------- API Helper ----------------
 async function api(method, path, data, isForm = false) {
   const opts = {
     method,
@@ -111,7 +111,7 @@ async function api(method, path, data, isForm = false) {
   return json;
 }
 
-// ──────────────── Format helpers ────────────────
+// ---------------- Format helpers ----------------
 const fmtDate = (d) => d ? new Date(d).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 const fmtDateOnly = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const fmtRp = (n) => n ? 'Rp ' + Number(n).toLocaleString('id-ID') : 'Rp 0';
@@ -127,7 +127,7 @@ const statusLabel = (s) => ({
   in: 'Masuk', out: 'Keluar', adjustment: 'Adjustment'
 })[s] || s;
 
-// ──────────────── Tom Select Helper ────────────────
+// ---------------- Tom Select Helper ----------------
 function initTomSelect(id) {
   const el = document.getElementById(id);
   if (!el || typeof TomSelect === 'undefined') return;
@@ -157,6 +157,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   loadNotifications();
+  loadProfile(); // Sync fresh data (Last Login, etc)
   setInterval(loadNotifications, 60000);
 });
 
@@ -302,7 +303,7 @@ function buildSidebar(module = 'cms') {
     const el = document.createElement('div');
     el.className = 'nav-item';
     el.dataset.page = item.page;
-    el.innerHTML = `<span class="nav-icon">${item.icon}</span> ${item.label}`;
+    el.innerHTML = `<span class="nav-icon">${item.icon}</span> ${item.label}${item.page === 'contacts' ? '<span id="contactUnreadBadge"></span>' : ''}`;
     el.addEventListener('click', () => navigateTo(item.page));
     nav.appendChild(el);
   });
@@ -2646,73 +2647,121 @@ async function forceLogoutUser(id) {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-
-// --------------------------------------------------------------------------------------------------
+// ==================================================================================================
 // PROFILE & NOTIFICATIONS
-// --------------------------------------------------------------------------------------------------
+// ==================================================================================================
 async function loadNotifications() {
   try {
-    const data = await api('GET', '/contacts');
-    const unread = (data.data || []).filter(c => !c.is_read).length;
-    const badge = document.getElementById('contactUnreadBadge');
-    if (badge) badge.innerHTML = unread ? `<span class="nav-badge">${unread}</span>` : '';
+    // 1. General Staff Notifications
+    const notifRes = await api('GET', '/notifications');
+    const notifBadge = document.getElementById('notifBadge');
+    if (notifBadge) {
+      notifBadge.textContent = notifRes.unread || 0;
+      notifBadge.style.display = notifRes.unread > 0 ? 'block' : 'none';
+    }
+
+    // 2. Contact/Message Inbox Badge
+    if (['superadmin', 'admin_website'].includes(me.role)) {
+      const contactRes = await api('GET', '/contacts');
+      const unreadContacts = (contactRes.data || []).filter(c => !c.is_read).length;
+      const contactBadge = document.getElementById('contactUnreadBadge');
+      if (contactBadge) {
+        contactBadge.innerHTML = unreadContacts ? `<span class="nav-badge">${unreadContacts}</span>` : '';
+      }
+    }
+
+    // 3. Render if on notifications page
+    if (currentPageId === 'notifications') {
+      renderNotifs('notifList');
+    }
+  } catch (e) {
+    console.error('Failed to load notifications:', e.message);
+  }
+}
+
+let notifData = [];
+function toggleNotifDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('notifDropdown');
+  if (!dd) return;
+  const isShow = dd.classList.toggle('show');
+  if (isShow) {
+    renderNotifs('notifListDropdown');
+    const closer = () => { dd.classList.remove('show'); document.removeEventListener('click', closer); };
+    document.addEventListener('click', closer);
+  }
+}
+
+function closeNotifDropdown() {
+  document.getElementById('notifDropdown')?.classList.remove('show');
+}
+
+async function renderNotifs(targetId = 'notifListDropdown') {
+  const listEl = document.getElementById(targetId);
+  if (!listEl) return;
+  
+  try {
+    const res = await api('GET', '/notifications');
+    notifData = res.data || [];
+    
+    if (!notifData.length) {
+      listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-light)">Tidak ada notifikasi</div>';
+      return;
+    }
+
+    listEl.innerHTML = notifData.map(n => `
+      <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', '${n.link}')">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-msg">${n.message}</div>
+        <div class="notif-time">${fmtDate(n.created_at)}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    listEl.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--danger)">Gagal memuat notifikasi</div>';
+  }
+}
+
+async function handleNotifClick(id, link) {
+  try {
+    await api('PUT', `/notifications/${id}/read`);
+    loadNotifications(); // Refresh badge
+    if (link) {
+      if (link.startsWith('/admin/panel.html')) {
+        const page = link.split('#')[1];
+        if (page) navigateTo(page);
+      } else {
+        window.location.href = link;
+      }
+    }
   } catch (e) { }
 }
 
-function loadProfile() {
-  const el = document.getElementById('profileInfo');
-  if (!el) return;
-  el.innerHTML = `
-    <div style="padding:1.5rem; display:flex; flex-direction:column; gap:1.2rem">
-      <div style="display:flex; align-items:center; gap:1.5rem">
-        <div style="width:70px; height:70px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:700">
-          ${(me.full_name || me.username || 'A')[0].toUpperCase()}
-        </div>
-        <div>
-          <div style="font-size:1.2rem; font-weight:700; color:var(--primary)">${me.full_name || me.username}</div>
-          <div style="color:var(--text-light); font-size:.85rem">Role: ${roleLabel(me.role)}</div>
-        </div>
-      </div>
-      <div style="display:grid; grid-template-columns:100px 1fr; gap:.5rem; font-size:.9rem; border-top:1px solid var(--gray100); padding-top:1.2rem">
-        <div style="color:var(--text-light)">Username</div><div><strong>${me.username}</strong></div>
-        <div style="color:var(--text-light)">Email</div><div><strong>${me.email}</strong></div>
-        <div style="color:var(--text-light)">Telepon</div><div><strong>${me.phone || '-'}</strong></div>
-        <div style="color:var(--text-light)">Terakhir Login</div><div><strong>${fmtDate(me.last_login)}</strong></div>
-      </div>
-    </div>
-  `;
-}
-
-async function doChangePassword() {
-  const old = getVal('cpOld'), nw = getVal('cpNew'), conf = getVal('cpConfirm');
-  if (!old || !nw || !conf) { toast('Semua field password wajib diisi', 'warning'); return; }
-  if (nw !== conf) { toast('Konfirmasi password tidak cocok', 'warning'); return; }
-  if (nw.length < 6) { toast('Password minimal 6 karakter', 'warning'); return; }
+async function markAllRead() {
   try {
-    await api('PUT', '/change-password', { current_password: old, new_password: nw });
-    toast('Password berhasil diubah. Harap login ulang.');
-    ['cpOld', 'cpNew', 'cpConfirm'].forEach(f => setVal(f, ''));
-    setTimeout(() => { localStorage.removeItem('jf_token'); localStorage.removeItem('jf_user'); window.location.href = 'index.html'; }, 2500);
+    await api('PUT', '/notifications/read-all');
+    toast('Semua notifikasi ditandai dibaca');
+    loadNotifications(); // Refreshes badges and page list (if on page)
+    renderNotifs('notifListDropdown'); // Refreshes dropdown list
   } catch (e) { toast(e.message, 'error'); }
 }
 
-
-
-// --------------------------------------------------------------------------------------------------
-// PROFILE & NOTIFICATIONS
-// --------------------------------------------------------------------------------------------------
-async function loadNotifications() {
+async function loadProfile() {
   try {
-    const data = await api('GET', '/contacts');
-    const unread = (data.data || []).filter(c => !c.is_read).length;
-    const badge = document.getElementById('contactUnreadBadge');
-    if (badge) badge.innerHTML = unread ? `<span class="nav-badge">${unread}</span>` : '';
-  } catch (e) { }
-}
+    const res = await api('GET', '/profile');
+    if (res.success) {
+      Object.assign(me, res.data);
+      localStorage.setItem('jf_user', JSON.stringify(me));
+      // Update header info if present
+      const avatar = document.getElementById('adminAvatar');
+      const name = document.getElementById('adminName');
+      if (avatar) avatar.textContent = (me.full_name || me.username || 'A')[0].toUpperCase();
+      if (name) name.textContent = me.full_name || me.username;
+    }
+  } catch (e) { console.error('Profile sync error', e); }
 
-function loadProfile() {
   const el = document.getElementById('profileInfo');
   if (!el) return;
+
   el.innerHTML = `
     <div style="padding:1.5rem; display:flex; flex-direction:column; gap:1.2rem">
       <div style="display:flex; align-items:center; gap:1.5rem">
@@ -2733,7 +2782,6 @@ function loadProfile() {
     </div>
   `;
 }
-
 async function doChangePassword() {
   const old = getVal('cpOld'), nw = getVal('cpNew'), conf = getVal('cpConfirm');
   if (!old || !nw || !conf) { toast('Semua field password wajib diisi', 'warning'); return; }
