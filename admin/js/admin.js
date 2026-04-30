@@ -1528,12 +1528,13 @@ let testiData = [];
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Outfit',sans-serif; color:#2C1A0E; padding:40px; background:#f4f1ee; font-size:12px; zoom: 0.7; }
+    body { font-family:'Outfit',sans-serif; color:#2C1A0E; padding:40px; background:#f4f1ee; font-size:12px; }
+    body.preview-mode { zoom: 0.7; }
     .actions { position:fixed; top:20px; right:20px; display:flex; gap:10px; z-index:999; }
     .btn { border:none; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,0.1); transition:.2s; display:flex; align-items:center; gap:8px; }
     .btn-primary { background:#5C2E0E; color:#fff; }
     .btn-outline { background:#fff; color:#5C2E0E; border:1px solid #5C2E0E; }
-    @media print { .actions { display:none !important; } body { padding:0; background:#fff; zoom: 1 !important; } .report-card { box-shadow:none !important; margin:0 !important; width:100% !important; max-width:none !important; } }
+    @media print { .actions { display:none !important; } body { padding:0; background:#fff; zoom: 1 !important; } body.preview-mode { zoom: 1 !important; } .report-card { box-shadow:none !important; margin:0 !important; width:100% !important; max-width:none !important; } }
     .report-card { background:#fff; max-width:1100px; margin:0 auto; padding:40px; box-shadow:0 20px 50px rgba(0,0,0,0.05); border-radius:12px; position:relative; }
     .report-card::before { content:""; position:absolute; top:0; left:0; right:0; height:8px; background:linear-gradient(90deg, #5C2E0E, #C49A6C); border-radius:12px 12px 0 0; }
     .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; border-bottom:3px solid #5C2E0E; padding-bottom:20px; }
@@ -1565,7 +1566,7 @@ let testiData = [];
     .summary-box { page-break-inside:avoid; }
   </style>
 </head>
-<body>
+<body class="preview-mode">
   <div class="actions">
     <button class="btn btn-outline" onclick="savePDF()">📄 Simpan PDF</button>
     <button class="btn btn-primary" onclick="window.print()">🖨️ Cetak Langsung</button>
@@ -1633,7 +1634,10 @@ let testiData = [];
         jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
-      html2pdf().set(opt).from(element).save();
+      document.body.classList.remove('preview-mode');
+      html2pdf().set(opt).from(element).save().then(() => {
+        document.body.classList.add('preview-mode');
+      });
     }
     window.onbeforeunload = function() {
       if (window.opener && !window.opener.closed) window.opener.focus();
@@ -2987,12 +2991,13 @@ let testiData = [];
           '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>' +
           '<style>' +
           '* { margin:0; padding:0; box-sizing:border-box; }' +
-          'body { font-family:"Outfit",sans-serif; color:#2C1A0E; padding:20px; background:#f4f1ee; line-height:1.4; font-size:11px; zoom:0.7; }' +
+          'body { font-family:"Outfit",sans-serif; color:#2C1A0E; padding:20px; background:#f4f1ee; line-height:1.4; font-size:11px; }' +
+          'body.preview-mode { zoom:0.7; }' +
           '.actions { position:fixed; top:20px; right:20px; display:flex; gap:10px; z-index:999; }' +
           '.btn { border:none; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,0.1); transition:.2s; display:flex; align-items:center; gap:8px; }' +
           '.btn-primary { background:#5C2E0E; color:#fff; }' +
           '.btn-outline { background:#fff; color:#5C2E0E; border:1px solid #5C2E0E; }' +
-          '@media print { .actions { display:none !important; } body { padding:0; background:#fff; zoom: 1 !important; } .report-card { box-shadow:none !important; margin:0 !important; width:100% !important; max-width:none !important; } }' +
+          '@media print { .actions { display:none !important; } body { padding:0; background:#fff; zoom: 1 !important; } body.preview-mode { zoom: 1 !important; } .report-card { box-shadow:none !important; margin:0 !important; width:100% !important; max-width:none !important; } }' +
           '.report-card { background:#fff; max-width:1100px; margin:0 auto; padding:30px; box-shadow:0 20px 50px rgba(0,0,0,0.05); border-radius:12px; position:relative; overflow:hidden; }' +
           '.report-card::before { content:""; position:absolute; top:0; left:0; right:0; height:8px; background:linear-gradient(90deg, #5C2E0E, #C49A6C); }' +
           '.header { display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:2px solid #F0EBE3; padding-bottom:15px; }' +
@@ -3009,7 +3014,7 @@ let testiData = [];
           'table { width:100% !important; border-collapse:collapse; page-break-inside:auto; }' +
           'tr { page-break-inside:avoid !important; page-break-after:auto; }' +
           'thead { display:table-header-group !important; }' +
-          '</style></head><body>' +
+          '</style></head><body class="preview-mode">' +
           '<div class="actions">' +
           '<button class="btn btn-outline" onclick="savePDF()">📄 Simpan PDF</button>' +
           '<button class="btn btn-primary" onclick="window.print()">🖨️ Cetak Langsung</button>' +
@@ -3024,7 +3029,7 @@ let testiData = [];
           '<table><thead><tr><th>Tanggal</th><th>Produk</th><th style="text-align:center">Tipe</th><th style="text-align:center">Qty</th><th style="text-align:center">Sblm</th><th style="text-align:center">Ssdh</th><th>Ref. No.</th><th>Admin</th></tr></thead>' +
           '<tbody>' + rows + '</tbody></table>' +
           '<div class="footer"><span>Total ' + items.length + ' transaksi ditemukan</span><span>Dicetak oleh: ' + (me.full_name || me.username) + '</span></div></div>' +
-          '<script>function savePDF() { const element = document.getElementById("printArea"); const opt = { margin:0.2, filename:"Transaksi_Stok.pdf", image:{type:"jpeg",quality:0.98}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:"in",format:"a4",orientation:"landscape"}, pagebreak:{mode:["avoid-all","css","legacy"]} }; html2pdf().set(opt).from(element).save(); } function doPrint() { window.print(); } window.onbeforeunload = function() { if (window.opener && !window.opener.closed) window.opener.focus(); };</script>' +
+          '<script>function savePDF() { const element = document.getElementById("printArea"); const opt = { margin:0.2, filename:"Transaksi_Stok.pdf", image:{type:"jpeg",quality:0.98}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:"in",format:"a4",orientation:"landscape"}, pagebreak:{mode:["avoid-all","css","legacy"]} }; document.body.classList.remove("preview-mode"); html2pdf().set(opt).from(element).save().then(() => { document.body.classList.add("preview-mode"); }); } function doPrint() { window.print(); } window.onbeforeunload = function() { if (window.opener && !window.opener.closed) window.opener.focus(); };</script>' +
           '</body></html>';
 
         const blob = new Blob([html], { type: 'text/html' });
