@@ -1528,12 +1528,12 @@ let testiData = [];
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Outfit',sans-serif; color:#2C1A0E; padding:40px; background:#f4f1ee; font-size:12px; }
+    body { font-family:'Outfit',sans-serif; color:#2C1A0E; padding:40px; background:#f4f1ee; font-size:12px; zoom: 0.7; }
     .actions { position:fixed; top:20px; right:20px; display:flex; gap:10px; z-index:999; }
     .btn { border:none; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,0.1); transition:.2s; display:flex; align-items:center; gap:8px; }
     .btn-primary { background:#5C2E0E; color:#fff; }
     .btn-outline { background:#fff; color:#5C2E0E; border:1px solid #5C2E0E; }
-    @media print { .actions { display:none !important; } body { padding:0; background:#fff; } .report-card { box-shadow:none !important; margin:0 !important; width:100% !important; max-width:none !important; } }
+    @media print { .actions { display:none !important; } body { padding:0; background:#fff; zoom: 1 !important; } .report-card { box-shadow:none !important; margin:0 !important; width:100% !important; max-width:none !important; } }
     .report-card { background:#fff; max-width:1100px; margin:0 auto; padding:40px; box-shadow:0 20px 50px rgba(0,0,0,0.05); border-radius:12px; position:relative; }
     .report-card::before { content:""; position:absolute; top:0; left:0; right:0; height:8px; background:linear-gradient(90deg, #5C2E0E, #C49A6C); border-radius:12px 12px 0 0; }
     .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; border-bottom:3px solid #5C2E0E; padding-bottom:20px; }
@@ -2932,9 +2932,10 @@ let testiData = [];
       const btn = event?.target;
       const oldText = btn ? btn.textContent : '📄 Export PDF';
       if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
-
-      const _pw = screen.width, _ph = screen.height;
-      const win = window.open('', '_blank', `width=${_pw},height=${_ph},left=0,top=0,menubar=no,toolbar=no,location=no,status=no`);
+      
+      const w = 1050, h = 850;
+      const left = (screen.width - w) / 2, top = (screen.height - h) / 2;
+      const win = window.open('', '_blank', `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no`);
       if (!win) {
         if (btn) { btn.disabled = false; btn.textContent = oldText; }
         toast('Popup diblokir browser. Izinkan popup untuk domain ini.', 'warning');
@@ -2960,17 +2961,18 @@ let testiData = [];
   `);
 
       try {
-        const type = getVal('txType'), from = getVal('txFrom'), to = getVal('txTo');
-        const data = await api('GET', '/stock/transactions?limit=2000&type=' + type + '&date_from=' + from + '&date_to=' + to);
+        const type = getVal('txType'), from = getVal('txFrom'), to = getVal('txTo'), q = getVal('txSearch');
+        const data = await api('GET', `/stock/transactions?limit=2000&type=${type}&date_from=${from}&date_to=${to}&search=${encodeURIComponent(q)}`);
         const items = data.data || [];
         const company = data.company || {};
         const typeLabel = { '': 'Semua Tipe', in: 'Barang Masuk', out: 'Barang Keluar', adjustment: 'Adjustment' };
 
         const rows = items.map(t => {
           const date = t.created_at ? new Date(t.created_at).toLocaleString('id-ID') : '-';
+          const productName = t.product_name || '<span style="color:#999;font-style:italic">Produk Terhapus</span>';
           return '<tr>' +
             '<td>' + date + '</td>' +
-            '<td><strong>' + t.product_name + '</strong>' + (t.sku ? '<br><small>' + t.sku + '</small>' : '') + '</td>' +
+            '<td><strong>' + productName + '</strong>' + (t.sku ? '<br><small>' + t.sku + '</small>' : '') + '</td>' +
             '<td style="text-align:center"><span class="badge badge-' + t.type + '">' + t.type.toUpperCase() + '</span></td>' +
             '<td style="text-align:center;font-weight:700;color:' + (t.type === 'in' ? '#2E7D32' : '#C62828') + '">' + (t.type === 'in' ? '+' : '-') + t.qty + '</td>' +
             '<td style="text-align:center;color:#888">' + t.qty_before + '</td>' +
@@ -2985,21 +2987,21 @@ let testiData = [];
           '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>' +
           '<style>' +
           '* { margin:0; padding:0; box-sizing:border-box; }' +
-          'body { font-family:"Outfit",sans-serif; color:#2C1A0E; padding:40px; background:#f4f1ee; line-height:1.4; font-size:11px; }' +
+          'body { font-family:"Outfit",sans-serif; color:#2C1A0E; padding:20px; background:#f4f1ee; line-height:1.4; font-size:11px; zoom:0.7; }' +
           '.actions { position:fixed; top:20px; right:20px; display:flex; gap:10px; z-index:999; }' +
           '.btn { border:none; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,0.1); transition:.2s; display:flex; align-items:center; gap:8px; }' +
           '.btn-primary { background:#5C2E0E; color:#fff; }' +
           '.btn-outline { background:#fff; color:#5C2E0E; border:1px solid #5C2E0E; }' +
-          '@media print { .actions { display:none !important; } body { padding:0; background:#fff; } .report-card { box-shadow:none !important; margin:0 !important; width:100% !important; max-width:none !important; } }' +
-          '.report-card { background:#fff; max-width:1100px; margin:0 auto; padding:40px; box-shadow:0 20px 50px rgba(0,0,0,0.05); border-radius:12px; position:relative; }' +
-          '.report-card::before { content:""; position:absolute; top:0; left:0; right:0; height:8px; background:linear-gradient(90deg, #5C2E0E, #C49A6C); border-radius:12px 12px 0 0; }' +
-          '.header { display:flex; justify-content:space-between; margin-bottom:30px; border-bottom:2px solid #F0EBE3; padding-bottom:20px; }' +
+          '@media print { .actions { display:none !important; } body { padding:0; background:#fff; zoom: 1 !important; } .report-card { box-shadow:none !important; margin:0 !important; width:100% !important; max-width:none !important; } }' +
+          '.report-card { background:#fff; max-width:1100px; margin:0 auto; padding:30px; box-shadow:0 20px 50px rgba(0,0,0,0.05); border-radius:12px; position:relative; overflow:hidden; }' +
+          '.report-card::before { content:""; position:absolute; top:0; left:0; right:0; height:8px; background:linear-gradient(90deg, #5C2E0E, #C49A6C); }' +
+          '.header { display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:2px solid #F0EBE3; padding-bottom:15px; }' +
           '.co-name { font-size:24px; font-weight:700; color:#5C2E0E; }' +
           '.report-title { font-size:18px; font-weight:700; color:#5C2E0E; text-align:right; }' +
           '.report-meta { font-size:10px; color:#6B5040; text-align:right; margin-top:5px; line-height:1.6; }' +
-          'table { width:100%; border-collapse:collapse; margin-top:20px; }' +
-          'th { background:#F5F0EB; padding:12px 8px; border-bottom:2px solid #5C2E0E; text-align:left; font-size:10px; text-transform:uppercase; color:#5C2E0E; font-weight:800; }' +
-          'td { padding:10px 8px; border-bottom:1px solid #F0EBE3; }' +
+          'table { width:100%; border-collapse:collapse; margin-top:10px; }' +
+          'th { background:#F5F0EB; padding:10px 8px; border-bottom:2px solid #5C2E0E; text-align:left; font-size:10px; text-transform:uppercase; color:#5C2E0E; font-weight:800; }' +
+          'td { padding:8px 8px; border-bottom:1px solid #F0EBE3; }' +
           '.badge { padding:2px 6px; border-radius:4px; font-size:9px; font-weight:700; }' +
           '.badge-in { background:#E8F5E9; color:#2E7D32; }' +
           '.badge-out { background:#FFEBEE; color:#C62828; }' +
@@ -3021,7 +3023,7 @@ let testiData = [];
           'Dicetak: ' + new Date().toLocaleString('id-ID') + '</div></div></div>' +
           '<table><thead><tr><th>Tanggal</th><th>Produk</th><th style="text-align:center">Tipe</th><th style="text-align:center">Qty</th><th style="text-align:center">Sblm</th><th style="text-align:center">Ssdh</th><th>Ref. No.</th><th>Admin</th></tr></thead>' +
           '<tbody>' + rows + '</tbody></table>' +
-          '<div class="footer"><span>Total ' + items.length + ' transaksi ditemukan</span><span>Dicetak oleh: ' + me.full_name + '</span></div></div>' +
+          '<div class="footer"><span>Total ' + items.length + ' transaksi ditemukan</span><span>Dicetak oleh: ' + (me.full_name || me.username) + '</span></div></div>' +
           '<script>function savePDF() { const element = document.getElementById("printArea"); const opt = { margin:0.2, filename:"Transaksi_Stok.pdf", image:{type:"jpeg",quality:0.98}, html2canvas:{scale:2, useCORS:true}, jsPDF:{unit:"in",format:"a4",orientation:"landscape"}, pagebreak:{mode:["avoid-all","css","legacy"]} }; html2pdf().set(opt).from(element).save(); } function doPrint() { window.print(); } window.onbeforeunload = function() { if (window.opener && !window.opener.closed) window.opener.focus(); };</script>' +
           '</body></html>';
 
@@ -3046,8 +3048,9 @@ let testiData = [];
     // POPUP WINDOW HELPER — Focus Recovery
     // ----------------------------------------------------------------------------------------------------
     function openReportWindow(htmlContent) {
-      const _pw = screen.width, _ph = screen.height;
-      const win = window.open('', '_blank', `width=${_pw},height=${_ph},left=0,top=0,menubar=no,toolbar=no,location=no,status=no`);
+      const w = 1050, h = 850;
+      const left = (screen.width - w) / 2, top = (screen.height - h) / 2;
+      const win = window.open('', '_blank', `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no`);
       if (!win) {
         toast('Popup diblokir browser. Izinkan popup untuk domain ini.', 'warning');
         return null;
